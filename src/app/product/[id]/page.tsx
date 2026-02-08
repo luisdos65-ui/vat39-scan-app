@@ -40,13 +40,25 @@ export default function ProductPage() {
         return;
     }
     
-    // 4. If absolutely nothing found, and just testing, maybe default to Glenfiddich or show error
-    // For now, let's default to Glenfiddich for any unknown ID to keep the demo alive
-    setProduct({ ...MOCK_GLENFIDDICH, id: id }); // Use the requested ID but mock data
-
+    // 4. If absolutely nothing found
+    // Stop loading, show "Not Found" state (handled by !product check)
+    // We do NOT default to Glenfiddich anymore
   }, [id]);
 
-  if (!product) return null;
+  if (!product) {
+      return (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4 px-6">
+              <div className="text-xl font-bold text-text">Product niet gevonden</div>
+              <p className="text-muted">We konden de gescande gegevens niet ophalen. Probeer opnieuw te scannen.</p>
+              <button 
+                onClick={() => router.push('/scan')}
+                className="px-6 py-3 bg-brand text-white rounded-full font-medium"
+              >
+                Opnieuw Scannen
+              </button>
+          </div>
+      );
+  }
 
   return (
     <div className="pb-8 space-y-6">
@@ -108,28 +120,52 @@ export default function ProductPage() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-[16px] p-5 shadow-sm border border-divider"
+            className="bg-white rounded-[16px] p-5 shadow-sm border border-divider relative"
         >
             <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-text flex items-center gap-2">
                     Vivino Score
                 </h3>
-                <div className="bg-[#B11831] text-white text-xs font-bold px-2 py-1 rounded">
-                    {product.vivino.score}
+                {product.vivino.score > 0 ? (
+                    <div className="bg-[#B11831] text-white text-xs font-bold px-2 py-1 rounded">
+                        {product.vivino.score}
+                    </div>
+                ) : (
+                    <div className="bg-gray-100 text-gray-500 text-xs font-bold px-2 py-1 rounded">
+                        ?
+                    </div>
+                )}
+            </div>
+            
+            {product.vivino.score > 0 ? (
+                <div className="flex items-center space-x-1 mb-2">
+                    {[1, 2, 3, 4].map(i => <Star key={i} className="w-4 h-4 fill-[#B11831] text-[#B11831]" />)}
+                    <Star className="w-4 h-4 text-[#B11831]" />
+                    <span className="text-xs text-muted ml-1">({product.vivino.reviews} reviews)</span>
                 </div>
-            </div>
-            <div className="flex items-center space-x-1 mb-2">
-                {[1, 2, 3, 4].map(i => <Star key={i} className="w-4 h-4 fill-[#B11831] text-[#B11831]" />)}
-                <Star className="w-4 h-4 text-[#B11831]" />
-                <span className="text-xs text-muted ml-1">({product.vivino.reviews} reviews)</span>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-3">
+            ) : (
+                <div className="mb-2 text-sm text-muted">
+                    Geen directe score gevonden.
+                </div>
+            )}
+
+            <div className="flex flex-wrap gap-2 mt-3 mb-4">
                 {product.vivino.highlights.map(tag => (
                     <span key={tag} className="px-2 py-1 bg-surface2 text-xs rounded-full text-muted border border-divider">
                         {tag}
                     </span>
                 ))}
             </div>
+
+            {product.vivino.url && (
+                 <Link 
+                    href={product.vivino.url} 
+                    target="_blank"
+                    className="w-full flex items-center justify-center gap-2 bg-[#B11831] text-white text-sm font-medium py-2 rounded-lg hover:bg-[#901328] transition-colors"
+                >
+                    Zoek op Vivino <ExternalLink className="w-4 h-4" />
+                </Link>
+            )}
         </motion.div>
       )}
 
