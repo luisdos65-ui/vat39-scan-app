@@ -90,7 +90,7 @@ export default function ProfilePage() {
         </button>
 
         <div className="text-center space-y-2 py-4">
-            <p className="text-xs text-muted">Versie 1.3.0 (Live)</p>
+            <p className="text-xs text-muted">Versie 1.3.1 (Live)</p>
             <p className="text-[10px] text-muted max-w-[250px] mx-auto leading-relaxed">
                 Drink met mate. Geen 18, geen alcohol.
             </p>

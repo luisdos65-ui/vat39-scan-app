@@ -152,7 +152,7 @@ export default function ScanPage() {
       </motion.div>
       
       <div className="text-[10px] text-muted/50 pt-4">
-        v1.3.0 - Live - {new Date().toLocaleTimeString()}
+        v1.3.1 - Live (Fix) - {new Date().toLocaleTimeString()}
       </div>
     </div>
   );
