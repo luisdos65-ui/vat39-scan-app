@@ -1,9 +1,26 @@
 'use client';
 
-import { User, Settings, Info, Shield, LogOut, ChevronRight } from 'lucide-react';
+import { User, Settings, Info, Shield, LogOut, ChevronRight, Trash2, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    if (confirm('Weet je zeker dat je wilt uitloggen? Alle opgeslagen gegevens worden gewist.')) {
+      localStorage.clear();
+      window.location.href = '/';
+    }
+  };
+
+  const handleClearHistory = () => {
+    if (confirm('Wil je je volledige scangeschiedenis wissen?')) {
+        localStorage.removeItem('recentScans');
+        alert('Geschiedenis is gewist.');
+    }
+  };
+
   return (
     <div className="space-y-8 pt-4">
       {/* Profile Header */}
@@ -22,39 +39,54 @@ export default function ProfilePage() {
         <section className="space-y-2">
             <h2 className="text-xs font-bold text-muted uppercase tracking-wider ml-1">Instellingen</h2>
             <div className="bg-white rounded-[16px] border border-divider divide-y divide-divider overflow-hidden">
-                <Link href="#" className="flex items-center justify-between p-4 hover:bg-surface2 transition-colors">
+                <button 
+                    onClick={() => alert('Instellingen zijn nog niet beschikbaar in deze beta-versie.')}
+                    className="w-full flex items-center justify-between p-4 hover:bg-surface2 transition-colors text-left"
+                >
                     <div className="flex items-center space-x-3">
                         <Settings className="w-5 h-5 text-text" />
                         <span className="text-sm font-medium">App Voorkeuren</span>
                     </div>
                     <ChevronRight className="w-4 h-4 text-muted" />
-                </Link>
+                </button>
+                <button 
+                    onClick={handleClearHistory}
+                    className="w-full flex items-center justify-between p-4 hover:bg-surface2 transition-colors text-left"
+                >
+                    <div className="flex items-center space-x-3">
+                        <Trash2 className="w-5 h-5 text-red-500" />
+                        <span className="text-sm font-medium text-red-500">Geschiedenis wissen</span>
+                    </div>
+                </button>
             </div>
         </section>
 
         <section className="space-y-2">
             <h2 className="text-xs font-bold text-muted uppercase tracking-wider ml-1">Info & Privacy</h2>
             <div className="bg-white rounded-[16px] border border-divider divide-y divide-divider overflow-hidden">
-                <Link href="#" className="flex items-center justify-between p-4 hover:bg-surface2 transition-colors">
+                <Link href="https://www.vat39.nl" target="_blank" className="flex items-center justify-between p-4 hover:bg-surface2 transition-colors">
                     <div className="flex items-center space-x-3">
                         <Info className="w-5 h-5 text-text" />
-                        <span className="text-sm font-medium">Over Vat39 Scan</span>
+                        <span className="text-sm font-medium">Over Vat39</span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-muted" />
+                    <ExternalLink className="w-4 h-4 text-muted" />
                 </Link>
-                <Link href="#" className="flex items-center justify-between p-4 hover:bg-surface2 transition-colors">
+                <Link href="https://www.vat39.nl" target="_blank" className="flex items-center justify-between p-4 hover:bg-surface2 transition-colors">
                     <div className="flex items-center space-x-3">
                         <Shield className="w-5 h-5 text-text" />
                         <span className="text-sm font-medium">Privacybeleid</span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-muted" />
+                    <ExternalLink className="w-4 h-4 text-muted" />
                 </Link>
             </div>
         </section>
 
-        <button className="w-full flex items-center justify-center space-x-2 p-4 text-red-600 font-medium hover:bg-red-50 rounded-[16px] transition-colors">
+        <button 
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center space-x-2 p-4 text-red-600 font-medium hover:bg-red-50 rounded-[16px] transition-colors"
+        >
             <LogOut className="w-5 h-5" />
-            <span>Uitloggen</span>
+            <span>Uitloggen / Reset</span>
         </button>
 
         <div className="text-center space-y-2 py-4">

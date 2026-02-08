@@ -1,7 +1,7 @@
 'use client';
 
 import { Camera, Upload, ScanLine, Loader2 } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { processScan } from '@/lib/services/product';
@@ -152,7 +152,7 @@ export default function ScanPage() {
       </motion.div>
       
       <div className="text-[10px] text-muted/50 pt-4">
-        v1.2.1 - OCR Active - {new Date().toLocaleTimeString()}
+        v1.2.2 - Fix 404 - {new Date().toLocaleTimeString()}
       </div>
     </div>
   );
