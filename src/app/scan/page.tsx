@@ -47,6 +47,7 @@ export default function ScanPage() {
       <input 
         type="file" 
         accept="image/*" 
+        capture="environment"
         className="hidden" 
         ref={fileInputRef}
         onChange={handleFileSelect}
