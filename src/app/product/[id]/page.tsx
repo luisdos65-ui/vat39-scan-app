@@ -17,16 +17,27 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const { isFavorite, toggleFavorite } = useFavorites();
 
+  // Add a mounted check to avoid hydration mismatch and ensure we are on client
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     // 1. Try to find product in recent scans (simulating DB fetch)
-    const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
-    const foundInScans = recentScans.find((p: Product) => p.id === id);
-
-    if (foundInScans) {
-      setProduct(foundInScans);
-      return;
+    try {
+        const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
+        const foundInScans = recentScans.find((p: Product) => p.id === id);
+        if (foundInScans) {
+            setProduct(foundInScans);
+            return;
+        }
+    } catch (e) {
+        console.error("Error reading from local storage", e);
     }
-
+    
     // 2. Try to find in Discover Mocks
     const foundInDiscover = DISCOVER_PRODUCTS.find(p => p.id === id);
     if (foundInDiscover) {
@@ -39,11 +50,10 @@ export default function ProductPage() {
         setProduct(MOCK_GLENFIDDICH);
         return;
     }
-    
-    // 4. If absolutely nothing found
-    // Stop loading, show "Not Found" state (handled by !product check)
-    // We do NOT default to Glenfiddich anymore
-  }, [id]);
+  }, [id, mounted]);
+
+  // Show loading state until mounted and product search is done
+  if (!mounted) return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div></div>;
 
   if (!product) {
       return (
