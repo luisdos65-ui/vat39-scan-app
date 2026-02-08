@@ -18,6 +18,20 @@ export default function ScanPage() {
     }
   };
 
+  // Cleanup old mocks from history on mount
+  useEffect(() => {
+    try {
+        const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
+        const cleanScans = recentScans.filter((p: any) => p.id !== 'mock-id');
+        if (recentScans.length !== cleanScans.length) {
+            localStorage.setItem('recentScans', JSON.stringify(cleanScans));
+            console.log("Cleaned up mock-id from history");
+        }
+    } catch (e) {
+        // Ignore parsing errors
+    }
+  }, []);
+
   const handleScan = async (file: File) => {
     setIsScanning(false);
     setIsProcessing(true);
@@ -136,6 +150,10 @@ export default function ScanPage() {
             </p>
          </div>
       </motion.div>
+      
+      <div className="text-[10px] text-muted/50 pt-4">
+        v1.2.1 - OCR Active - {new Date().toLocaleTimeString()}
+      </div>
     </div>
   );
 }
