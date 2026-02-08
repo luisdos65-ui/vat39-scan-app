@@ -108,6 +108,6 @@ export const MOCK_GLENFIDDICH: Product = {
         reviews: 1250,
         highlights: ["Smooth", "Fruity", "Pear notes"]
     },
-    userScore: null,
+    // userScore: undefined, // Removed null assignment to fix TS error
     scannedAt: new Date()
 };
