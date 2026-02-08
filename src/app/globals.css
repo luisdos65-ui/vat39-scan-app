@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  /* Design Tokens */
+  --bg: #FAFAFA;
+  --surface: #FFFFFF;
+  --surface2: #F3F4F6;
+  --text: #111827;
+  --muted: #6B7280;
+  --divider: #E5E7EB;
+  --brand: #940B15;
+  --brand-2: #BF1F26;
+  --brand-soft: #FBEAEC;
+  
+  /* Radius */
+  --radius-card: 16px;
+  --radius-button: 14px;
+
+  /* Base mappings */
+  --background: var(--bg);
+  --foreground: var(--text);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-muted: var(--muted);
+  --color-divider: var(--divider);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --color-brand-soft: var(--brand-soft);
+  
+  --radius-card: var(--radius-card);
+  --radius-button: var(--radius-button);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
