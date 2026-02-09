@@ -1,13 +1,14 @@
 'use client';
 
-import { Camera, Upload, ScanLine, Loader2 } from 'lucide-react';
+import { Camera, Upload, ScanLine, Loader2, Search } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { processScan } from '@/lib/services/product';
+import { processScan, processTextSearch } from '@/lib/services/product';
 
 export default function ScanPage() {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [errorLog, setErrorLog] = useState<string[]>([]); // New debug log state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -15,6 +16,33 @@ export default function ScanPage() {
   const addLog = (msg: string) => {
     console.log(msg);
     setErrorLog(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${msg}`]);
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setIsProcessing(true);
+    setErrorLog([]);
+    addLog(`Searching for: ${searchQuery}`);
+
+    try {
+        const product = await processTextSearch(searchQuery);
+        addLog(`Search success: ${product.name}`);
+        
+        try {
+            const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
+            localStorage.setItem('recentScans', JSON.stringify([product, ...recentScans].slice(0, 10)));
+        } catch (storageError) {
+             console.error(storageError);
+        }
+
+        router.push(`/product/${product.id}`);
+    } catch (error) {
+        console.error("Search failed:", error);
+        addLog(`ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setIsProcessing(false);
+    }
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,6 +174,37 @@ export default function ScanPage() {
             <Upload className="w-5 h-5 text-muted" />
             <span>Upload Foto</span>
         </button>
+      </motion.div>
+
+      {/* Manual Search Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="w-full max-w-xs space-y-3 pt-2"
+      >
+        <div className="relative flex items-center py-2">
+            <div className="flex-grow border-t border-divider"></div>
+            <span className="flex-shrink-0 mx-4 text-xs text-muted uppercase tracking-wider font-medium">Of zoek op naam</span>
+            <div className="flex-grow border-t border-divider"></div>
+        </div>
+        
+        <form onSubmit={handleSearch} className="flex space-x-2">
+            <input 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Bv. Glenfiddich 12..."
+                className="flex-1 h-12 px-4 rounded-[12px] border border-divider bg-white text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
+            />
+            <button 
+                type="submit"
+                disabled={!searchQuery.trim() || isProcessing}
+                className="h-12 w-12 flex items-center justify-center bg-brand text-white rounded-[12px] hover:bg-brand-dark transition-colors disabled:opacity-50 shadow-sm"
+            >
+                {isProcessing && searchQuery ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+            </button>
+        </form>
       </motion.div>
 
       <motion.div 
