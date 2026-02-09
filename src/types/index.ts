@@ -63,6 +63,7 @@ export interface Product {
   citations?: Citation[];
   productUrl?: string;
   verificationStatus?: 'VERIFIED' | 'PARTIAL' | 'UNKNOWN';
+  scanMethod?: 'google-ai' | 'tesseract-ocr';
   
   userScore?: number;
   userReview?: string;

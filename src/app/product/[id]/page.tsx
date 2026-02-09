@@ -154,6 +154,7 @@ export default function ProductPage() {
         <div className="space-y-1">
             <div className="flex items-center justify-center space-x-2">
                 <div className="text-xs font-semibold text-brand tracking-wider uppercase">{product.category}</div>
+                {getScanMethodBadge(product.scanMethod)}
             </div>
             <h1 className="text-2xl font-bold text-text">{product.name}</h1>
             <div className="flex items-center justify-center space-x-2 text-sm text-muted">

@@ -43,7 +43,8 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
                   abv: data.abv ? `${data.abv}` : undefined,
                   volume: data.volume ? `${data.volume}` : undefined,
                   vintage: data.vintage ? `${data.vintage}` : undefined,
-                  confidence: 'high'
+                  confidence: 'high',
+                  scanMethod: 'google-ai'
               };
           }
       } else {

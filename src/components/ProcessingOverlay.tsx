@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Search, Globe, FileText, CheckCircle } from 'lucide-react';
+import { Search, Globe, FileText, CheckCircle, Sparkles } from 'lucide-react';
 
 const steps = [
-  { id: 'ocr', label: 'Etiket lezen...', icon: FileText },
+  { id: 'ocr', label: 'Google AI Analyse...', icon: Sparkles },
   { id: 'search', label: 'Producent zoeken...', icon: Search },
   { id: 'parse', label: 'Website analyseren...', icon: Globe },
   { id: 'verify', label: 'Verifiëren...', icon: CheckCircle },
