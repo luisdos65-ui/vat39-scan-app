@@ -113,10 +113,11 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
         'product of', 'produit de', 'contains', 'bevat', 'sulfites', 'sulfieten',
         'vol', 'alc', 'cl', 'ml', 'l', '750', '700', '500', 'year', 'old', 'aged',
         'appellation', 'controlee', 'protected', 'origin', 'bottled', 'mis en bouteille',
-        'estate', 'domaine', 'chateau', 'grand vin', 'selection', 'reserve', 'family',
-        'fine', 'wine', 'spirits', 'distilled', 'blended', 'since', 'anno', 'estd',
+        'grand vin', 'selection', 'reserve', 'family',
+        'fine', 'spirits', 'distilled', 'blended', 'since', 'anno', 'estd',
         'import', 'export', 'quality', 'premium', 'superior'
     ];
+    // REMOVED from ignore list: 'chateau', 'domaine', 'estate', 'tenuta', 'bodega', 'wine'
 
     // Filter valid lines
     let validLines = lines.filter((line: any) => {
@@ -143,9 +144,15 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
     // Best guess: Largest text is Brand, 2nd largest is Product Name (if not ignored)
     if (validLines.length > 0) {
         // Find first line that isn't a common keyword
+        // Prioritize lines starting with known prefixes
+        const PRIORITY_PREFIXES = ['chateau', 'domaine', 'tenuta', 'bodega', 'finca', 'villa', 'castello'];
+        
         const brandCandidate = validLines.find((l: any) => {
              const t = l.text.toLowerCase();
-             // Less strict ignore list for brand candidate
+             // If it starts with a priority prefix, IT IS THE BRAND (almost certainly)
+             if (PRIORITY_PREFIXES.some(p => t.startsWith(p))) return true;
+             
+             // Otherwise check ignore list
              return !IGNORED_TERMS.some(term => t.includes(term));
         }) || validLines[0];
 
@@ -186,8 +193,9 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
 
     return {
         rawText: text,
-        brand: brand.replace(/[^a-zA-Z0-9\s\-\.]/g, '').trim(),
-        productName: productName.replace(/[^a-zA-Z0-9\s\-\.]/g, '').trim(),
+        // ALLOW accents and international characters (removed strict regex)
+        brand: brand.trim(), 
+        productName: productName.trim(),
         category: "Wijn / Gedistilleerd",
         abv,
         volume,
