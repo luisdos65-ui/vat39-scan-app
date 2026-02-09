@@ -60,22 +60,8 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
                 }
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Pre-processing: Grayscale & Contrast to improve OCR
-                const imageData = ctx.getImageData(0, 0, width, height);
-                const data = imageData.data;
-                for (let i = 0; i < data.length; i += 4) {
-                    // Grayscale (Luminosity method)
-                    const avg = 0.21 * data[i] + 0.72 * data[i + 1] + 0.07 * data[i + 2];
-                    // Increase contrast
-                    const contrast = 1.2; // 20% more contrast
-                    const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-                    const color = factor * (avg - 128) + 128;
-                    
-                    data[i] = color;     // R
-                    data[i + 1] = color; // G
-                    data[i + 2] = color; // B
-                }
-                ctx.putImageData(imageData, 0, 0);
+                // Note: Tesseract v5/v6 handles binarization well internally.
+                // We skip manual grayscale to avoid potential canvas data issues across devices.
 
                 canvas.toBlob((blob) => {
                     if (blob) resolve(blob);
@@ -158,11 +144,16 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
         } else if (validLines.length > 1 && validLines[1] !== brandCandidate) {
             productName = validLines[1].text.trim();
         }
+    } else if (lines.length > 0) {
+        // Fallback: If "validLines" filtering was too strict, use raw lines
+        // Sort raw lines by confidence or just take top ones
+        brand = lines[0].text.trim();
+        if (lines.length > 1) productName = lines[1].text.trim();
     }
 
-    // Heuristic: If we found very little text, assume failure
-    if (text.length < 5 || validLines.length === 0) {
-        throw new Error("Not enough text found");
+    // Heuristic: Only fail if ABSOLUTELY no text
+    if (text.length < 2 && lines.length === 0) {
+        throw new Error("No text found");
     }
     
     // Extract metadata from full text

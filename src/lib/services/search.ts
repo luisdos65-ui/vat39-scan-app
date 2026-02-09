@@ -5,7 +5,10 @@ export async function findProducerInfo(scannedData: ScannedData): Promise<Produc
   // Simulate search API delay
   await new Promise(resolve => setTimeout(resolve, 800));
 
-  const brand = scannedData.brand || "Unknown";
+  const brand = (scannedData.brand && scannedData.brand !== 'Onbekend Merk') 
+    ? scannedData.brand 
+    : scannedData.rawText.substring(0, 50).replace(/\n/g, ' ');
+
   const searchQuery = encodeURIComponent(`${brand} wine producer`);
   
   if (brand.toLowerCase().includes('glenfiddich')) {
@@ -29,7 +32,11 @@ export async function findVivinoData(scannedData: ScannedData) {
     // Simulate Vivino lookup
     await new Promise(resolve => setTimeout(resolve, 800));
     
-    const query = `${scannedData.brand || ''} ${scannedData.productName || ''} ${scannedData.vintage || ''}`.trim();
+    const queryTerm = (scannedData.brand && scannedData.brand !== 'Onbekend Merk')
+        ? `${scannedData.brand || ''} ${scannedData.productName || ''} ${scannedData.vintage || ''}`
+        : scannedData.rawText.substring(0, 100).replace(/\n/g, ' ');
+
+    const query = queryTerm.trim();
     const searchUrl = `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`;
 
     // If we have a very specific mock match (Glenfiddich), keep it for demo
