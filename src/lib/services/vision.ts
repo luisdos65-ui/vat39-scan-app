@@ -59,10 +59,28 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
                     return;
                 }
                 ctx.drawImage(img, 0, 0, width, height);
+                
+                // Pre-processing: Grayscale & Contrast to improve OCR
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    // Grayscale (Luminosity method)
+                    const avg = 0.21 * data[i] + 0.72 * data[i + 1] + 0.07 * data[i + 2];
+                    // Increase contrast
+                    const contrast = 1.2; // 20% more contrast
+                    const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+                    const color = factor * (avg - 128) + 128;
+                    
+                    data[i] = color;     // R
+                    data[i + 1] = color; // G
+                    data[i + 2] = color; // B
+                }
+                ctx.putImageData(imageData, 0, 0);
+
                 canvas.toBlob((blob) => {
                     if (blob) resolve(blob);
                     else reject(new Error('Canvas to Blob failed'));
-                }, 'image/jpeg', 0.8);
+                }, 'image/jpeg', 0.9);
             };
             img.onerror = reject;
             img.src = URL.createObjectURL(file);
@@ -84,11 +102,70 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
     const result: any = await Promise.race([recognitionPromise, timeoutPromise]);
     
     const text = result.data.text;
-    console.log("OCR Result:", text);
+    const lines = result.data.lines || [];
+    console.log("OCR Text:", text);
 
-    // Basic heuristic parsing
-    const lines = text.split('\n').filter((l: string) => l.trim().length > 2);
+    // Advanced Parsing using Bounding Boxes and Confidence
+    const IGNORED_TERMS = [
+        'product of', 'produit de', 'contains', 'bevat', 'sulfites', 'sulfieten',
+        'vol', 'alc', 'cl', 'ml', 'l', '750', '700', '500', 'year', 'old', 'aged',
+        'appellation', 'controlee', 'protected', 'origin', 'bottled', 'mis en bouteille',
+        'estate', 'domaine', 'chateau', 'grand vin', 'selection', 'reserve', 'family',
+        'fine', 'wine', 'spirits', 'distilled', 'blended', 'since', 'anno', 'estd',
+        'import', 'export', 'quality', 'premium', 'superior'
+    ];
+
+    // Filter valid lines
+    let validLines = lines.filter((line: any) => {
+        const txt = line.text.trim().toLowerCase();
+        // Remove short lines or low confidence
+        if (txt.length < 3 || line.confidence < 60) return false;
+        // Remove lines that are purely technical info (vol, abv)
+        if (txt.match(/^(\d{1,2}[.,]?\d{0,1})\s?%/) || txt.match(/(\d{2,4})\s?(cl|ml|l)/)) return false;
+        return true;
+    });
+
+    // Calculate height for each line (to find the biggest text -> likely Brand)
+    validLines = validLines.map((line: any) => ({
+        ...line,
+        height: line.bbox.y1 - line.bbox.y0
+    }));
+
+    // Sort by height (descending)
+    validLines.sort((a: any, b: any) => b.height - a.height);
+
+    let brand = "Onbekend Merk";
+    let productName = "Onbekend Product";
+
+    // Best guess: Largest text is Brand, 2nd largest is Product Name (if not ignored)
+    if (validLines.length > 0) {
+        // Find first line that isn't a common keyword (unless it's the ONLY text)
+        const brandCandidate = validLines.find((l: any) => {
+             const t = l.text.toLowerCase();
+             return !IGNORED_TERMS.some(term => t.includes(term));
+        }) || validLines[0];
+
+        brand = brandCandidate.text.trim();
+
+        // Find second largest for product name
+        const productCandidate = validLines.find((l: any) => 
+            l !== brandCandidate && 
+            !IGNORED_TERMS.some(term => l.text.toLowerCase().includes(term))
+        );
+        
+        if (productCandidate) {
+            productName = productCandidate.text.trim();
+        } else if (validLines.length > 1 && validLines[1] !== brandCandidate) {
+            productName = validLines[1].text.trim();
+        }
+    }
+
+    // Heuristic: If we found very little text, assume failure
+    if (text.length < 5 || validLines.length === 0) {
+        throw new Error("Not enough text found");
+    }
     
+    // Extract metadata from full text
     const vintageMatch = text.match(/(19|20)\d{2}/);
     const vintage = vintageMatch ? vintageMatch[0] : undefined;
 
@@ -98,32 +175,10 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
     const volMatch = text.match(/(\d{2,4})\s?(cl|ml|l)/i);
     const volume = volMatch ? volMatch[0] : undefined;
 
-    let brand = "Onbekend Merk";
-    let productName = "Onbekend Product";
-
-    const cleanLines = lines.filter((line: string) => 
-        !line.match(/vol/i) && 
-        !line.match(/cl|ml/i) && 
-        !line.match(/product of/i) &&
-        line.length > 3
-    );
-
-    if (cleanLines.length > 0) {
-        brand = cleanLines[0];
-        if (cleanLines.length > 1) {
-            productName = cleanLines[1];
-        }
-    }
-
-    // Heuristic: If we found very little text, assume failure
-    if (text.length < 10 || cleanLines.length === 0) {
-        throw new Error("Not enough text found");
-    }
-
     return {
         rawText: text,
-        brand: brand.replace(/[^a-zA-Z0-9\s]/g, '').trim(),
-        productName: productName.replace(/[^a-zA-Z0-9\s]/g, '').trim(),
+        brand: brand.replace(/[^a-zA-Z0-9\s\-\.]/g, '').trim(),
+        productName: productName.replace(/[^a-zA-Z0-9\s\-\.]/g, '').trim(),
         category: "Wijn / Gedistilleerd",
         abv,
         volume,
