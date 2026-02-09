@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "Vat39 De Specialist",
   description: "Scan & Discover wines and spirits",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
