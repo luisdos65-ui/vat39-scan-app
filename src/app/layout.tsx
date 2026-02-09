@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+// Force Vercel deploy
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
