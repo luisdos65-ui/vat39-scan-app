@@ -1,14 +1,18 @@
 import { ScannedData } from '@/types';
-import Tesseract from 'tesseract.js';
+// Remove top-level import to prevent server-side build issues
+// import Tesseract from 'tesseract.js';
 
 // Real implementation using Tesseract.js (Client-side OCR)
 export async function extractDataFromImage(imageFile: File): Promise<ScannedData> {
   console.log('Processing image with Tesseract:', imageFile.name);
 
   try {
+    // Dynamic import to ensure it only loads when called (Client Side)
+    const Tesseract = (await import('tesseract.js')).default;
+
     // Timeout race to prevent hanging forever
     const timeoutPromise = new Promise<ScannedData>((_, reject) => 
-        setTimeout(() => reject(new Error('OCR Timeout')), 10000)
+        setTimeout(() => reject(new Error('OCR Timeout')), 15000)
     );
 
     const recognitionPromise = (async () => {
