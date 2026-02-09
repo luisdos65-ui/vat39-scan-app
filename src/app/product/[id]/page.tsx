@@ -170,7 +170,54 @@ export default function ProductPage() {
         </div>
       </div>
 
-      {/* Vivino Card REMOVED */}
+      {/* Vivino Card */}
+      {product.vivino && (
+        <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-[16px] p-5 shadow-sm border border-divider relative overflow-hidden"
+        >
+            <div className="absolute top-0 right-0 p-3 opacity-10">
+                <Star className="w-16 h-16" />
+            </div>
+            
+            <div className="flex items-start justify-between mb-4 relative z-10">
+                <div>
+                    <h3 className="font-semibold text-text">Vivino Score</h3>
+                    <div className="flex items-baseline space-x-2 mt-1">
+                        <span className="text-3xl font-bold text-brand">{product.vivino.score}</span>
+                        <span className="text-sm text-muted">/ 5.0</span>
+                    </div>
+                    <div className="text-xs text-muted mt-1">{product.vivino.reviews} beoordelingen</div>
+                </div>
+                {product.vivino.url && (
+                    <Link href={product.vivino.url} target="_blank" className="text-brand text-xs font-medium flex items-center bg-brand-soft px-2 py-1 rounded-full">
+                        Bekijk op Vivino <ExternalLink className="w-3 h-3 ml-1" />
+                    </Link>
+                )}
+            </div>
+
+            {product.vivino.top_reviews && product.vivino.top_reviews.length > 0 && (
+                <div className="space-y-3 pt-3 border-t border-divider border-dashed relative z-10">
+                    <h4 className="text-xs font-semibold text-muted uppercase tracking-wider">Top Reviews</h4>
+                    {product.vivino.top_reviews.map((review, idx) => (
+                        <div key={idx} className="bg-surface2 rounded-lg p-3">
+                            <div className="flex justify-between items-start mb-1">
+                                <span className="font-medium text-xs text-text">{review.user}</span>
+                                <div className="flex text-yellow-500">
+                                    {[...Array(5)].map((_, i) => (
+                                        <Star key={i} className={clsx("w-3 h-3", i < review.rating ? "fill-current" : "text-gray-300")} />
+                                    ))}
+                                </div>
+                            </div>
+                            <p className="text-xs text-text/80 italic">"{review.text}"</p>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </motion.div>
+      )}
 
       {/* Production Method Card */}
       {product.productionMethod && (
@@ -272,13 +319,48 @@ export default function ProductPage() {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="bg-brand-soft rounded-[16px] p-5 border border-brand/10 text-center space-y-3"
+        className="bg-brand-soft rounded-[16px] p-5 border border-brand/10 space-y-3"
       >
-        <h3 className="font-semibold text-brand-2">Wat vind jij?</h3>
-        <p className="text-sm text-muted">Heb je dit product geproefd? Deel je mening.</p>
-        <button className="w-full bg-white text-brand font-medium h-10 rounded-[14px] border border-brand/20 shadow-sm active:scale-[0.98] transition-all">
-            Schrijf een review
-        </button>
+        <div className="text-center space-y-2">
+            <h3 className="font-semibold text-brand-2">Wat vind jij?</h3>
+            <p className="text-sm text-muted">Heb je dit product geproefd? Deel je mening.</p>
+        </div>
+
+        {!product.userReview ? (
+             <button 
+                onClick={() => {
+                    const review = prompt("Schrijf je review:");
+                    const rating = prompt("Geef een score (1-5):");
+                    if (review && rating) {
+                        const updatedProduct = { 
+                            ...product, 
+                            userReview: review, 
+                            userScore: parseInt(rating) 
+                        };
+                        setProduct(updatedProduct);
+                        // Update in local storage
+                        const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
+                        const updatedScans = recentScans.map((p: Product) => p.id === product.id ? updatedProduct : p);
+                        localStorage.setItem('recentScans', JSON.stringify(updatedScans));
+                    }
+                }}
+                className="w-full bg-white text-brand font-medium h-10 rounded-[14px] border border-brand/20 shadow-sm active:scale-[0.98] transition-all"
+             >
+                Schrijf een review
+             </button>
+        ) : (
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="flex justify-between items-start mb-2">
+                    <span className="font-medium text-sm text-text">Jouw Review</span>
+                    <div className="flex text-yellow-500">
+                        {[...Array(5)].map((_, i) => (
+                            <Star key={i} className={clsx("w-3 h-3", i < (product.userScore || 0) ? "fill-current" : "text-gray-300")} />
+                        ))}
+                    </div>
+                </div>
+                <p className="text-sm text-text/80 italic">"{product.userReview}"</p>
+            </div>
+        )}
       </motion.div>
     </div>
   );

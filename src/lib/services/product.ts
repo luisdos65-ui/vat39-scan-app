@@ -1,5 +1,5 @@
 import { Product, ScannedData } from '@/types';
-import { findProducerInfo, findVat39Recommendation, findProductionMethod } from './search';
+import { findProducerInfo, findVat39Recommendation, findProductionMethod, findVivinoData } from './search';
 import { extractDataFromImage } from './vision';
 import { DISCOVER_PRODUCTS, MOCK_GLENFIDDICH } from '@/lib/data/mocks';
 import { compressImage } from '@/lib/utils';
@@ -21,8 +21,9 @@ export async function processTextSearch(query: string): Promise<Product> {
   };
 
   // Parallel fetch for Enrichment
-  const [producer, vat39Rec, production] = await Promise.all([
+  const [producer, vivino, vat39Rec, production] = await Promise.all([
     findProducerInfo(scannedData),
+    findVivinoData(scannedData),
     findVat39Recommendation(scannedData),
     findProductionMethod(scannedData)
   ]);
@@ -36,6 +37,7 @@ export async function processTextSearch(query: string): Promise<Product> {
     category: "Gezocht Product",
     image: "https://images.unsplash.com/photo-1569919659476-f0852f6834b7?auto=format&fit=crop&q=80&w=1000", // Generic search image
     producer,
+    vivino,
     vat39Recommendation: vat39Rec,
     productionMethod: production,
     verificationStatus,
@@ -62,11 +64,12 @@ export async function processScan(imageFile: File): Promise<Product> {
      throw new Error("Geen tekst gevonden. Probeer handmatig te zoeken.");
   }
 
-  // Parallel fetch for Enrichment (Producer info + Vat39 + Production)
-  // Corresponds to Base44 Steps 2 (Search), 3 (Parse), 4 (Verify)
+  // Parallel fetch for Enrichment (Producer info + Vivino + Vat39 + Production)
+  // Corresponds to Base44 Steps 2 (Search), 3 (Parse), 4 (Verify), 5 (Vivino)
   // We execute them in parallel for speed, but logically they map to the requested flow.
-  const [producer, vat39Rec, production] = await Promise.all([
+  const [producer, vivino, vat39Rec, production] = await Promise.all([
     findProducerInfo(scannedData),
+    findVivinoData(scannedData),
     findVat39Recommendation(scannedData),
     findProductionMethod(scannedData)
   ]);
@@ -94,10 +97,13 @@ export async function processScan(imageFile: File): Promise<Product> {
     vintage: scannedData.vintage,
     image: base64Image, // Persistent Data URL
     producer,
+    vivino,
     vat39Recommendation: vat39Rec,
     productionMethod: production,
     verificationStatus,
     citations: producer.citations || [],
+    scannedAt: new Date()
+  };
     scannedAt: new Date()
   };
 }

@@ -100,6 +100,37 @@ export async function findProductionMethod(scannedData: ScannedData): Promise<st
         return "Geproduceerd via koude vergisting op roestvrijstalen tanks om de frisse fruitaroma's optimaal te behouden.";
     }
 
-    return "Ambachtelijk geproduceerd volgens traditionele methoden, waarbij kwaliteit en vakmanschap centraal staan in elke stap van het proces.";
+    return "Geproduceerd volgens traditionele methoden met respect voor het terroir en de natuurlijke omgeving.";
+}
+
+export async function findVivinoData(scannedData: ScannedData): Promise<VivinoData> {
+    // Simulate API latency
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    const brand = scannedData.brand?.toLowerCase() || '';
+    
+    // Simulate high score for Glenfiddich
+    if (brand.includes('glenfiddich')) {
+        return {
+            score: 4.6,
+            reviews: 12500,
+            url: 'https://www.vivino.com/wines/glenfiddich-12-year-old-single-malt-scotch-whisky',
+            top_reviews: [
+                { user: "WhiskyLover99", rating: 5, text: "Excellent daily dram. Pear and oak notes.", date: "2023-10-15" },
+                { user: "Jan de Vries", rating: 4, text: "Prima prijs-kwaliteit verhouding.", date: "2023-09-20" }
+            ]
+        };
+    }
+
+    // Generic score for others
+    return {
+        score: 4.0, // Default "Good" score
+        reviews: Math.floor(Math.random() * 500) + 50,
+        url: `https://www.vivino.com/search/wines?q=${encodeURIComponent(brand)}`,
+        top_reviews: [
+            { user: "WijnGenieter", rating: 4, text: "Aangename verrassing, soepel en fruitig.", date: "2023-11-01" },
+            { user: "Sophie", rating: 4.5, text: "Heerlijk bij het diner!", date: "2023-10-28" }
+        ]
+    };
 }
 
