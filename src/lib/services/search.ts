@@ -1,6 +1,6 @@
-import { Producer, ScannedData } from '@/types';
+import { Producer, ScannedData, VivinoData } from '@/types';
 
-// Mock Search Service -> Now returning "Smart Links"
+// Mock Search Service -> Now returning "Smart Links" or simulating LLM extraction
 export async function findProducerInfo(scannedData: ScannedData): Promise<Producer> {
   // Simulate search API delay
   await new Promise(resolve => setTimeout(resolve, 800));
@@ -11,24 +11,58 @@ export async function findProducerInfo(scannedData: ScannedData): Promise<Produc
 
   const searchQuery = encodeURIComponent(`${brand} wine producer`);
   
-  if (brand.toLowerCase().includes('glenfiddich')) {
+  // Simulated "Verified" Database
+  if (brand?.toLowerCase().includes('glenfiddich')) {
     return {
       name: "William Grant & Sons",
-      region: "Speyside, Scotland",
+      type: "Distillery",
+      country: "Scotland",
+      region: "Speyside",
       website: "https://www.glenfiddich.com",
-      description: "Glenfiddich means 'Valley of the Deer' in Gaelic. The distillery was founded in 1886 by William Grant."
+      about: "Glenfiddich means 'Valley of the Deer' in Gaelic. The distillery was founded in 1886 by William Grant.",
+      description: "Glenfiddich means 'Valley of the Deer' in Gaelic. The distillery was founded in 1886 by William Grant.",
+      citations: [
+        { url: "https://www.glenfiddich.com", quote: "Founded in 1886 by William Grant" }
+      ]
     };
   }
 
-  // Dynamic Fallback with Search Link
+  // Generic "Smart" Match for Common Wine Terms
+  if (brand?.match(/chateau|domaine|tenuta|bodega|vina|estate|cascina|finca/i)) {
+      return {
+          name: brand,
+          type: "Wijnhuis",
+          country: "Wijnstreek", // Generic
+          website: `https://www.google.com/search?q=${searchQuery}`,
+          about: "Een erkend wijnhuis. Klik op de website link voor specifieke details over de historie en wijngaarden.",
+          description: "Een erkend wijnhuis. Klik op de website link voor specifieke details over de historie en wijngaarden.",
+          citations: []
+      };
+  }
+
+  // Generic Match for Spirits
+  if (brand?.match(/whisky|whiskey|gin|vodka|rum|cognac|brandy|liqueur/i) || 
+      scannedData.rawText.match(/whisky|whiskey|gin|vodka|rum/i)) {
+      return {
+          name: brand || "Gedistilleerd",
+          type: "Sterke Drank",
+          website: `https://www.google.com/search?q=${searchQuery}`,
+          about: "Een gedistilleerde drank. Scan een specifieker merk of zoek handmatig voor meer details.",
+          description: "Een gedistilleerde drank. Scan een specifieker merk of zoek handmatig voor meer details.",
+          citations: []
+      };
+  }
+
+  // Dynamic Fallback with Search Link (simulating "PARTIAL" or "UNKNOWN" status)
   return {
-    name: brand,
+    name: brand || "Onbekend",
     website: `https://www.google.com/search?q=${searchQuery}`,
+    about: `Klik om meer informatie over ${brand} te zoeken op Google.`,
     description: `Klik om meer informatie over ${brand} te zoeken op Google.`
   };
 }
 
-export async function findVivinoData(scannedData: ScannedData) {
+export async function findVivinoData(scannedData: ScannedData): Promise<VivinoData> {
     // Simulate Vivino lookup
     await new Promise(resolve => setTimeout(resolve, 800));
     
@@ -45,6 +79,10 @@ export async function findVivinoData(scannedData: ScannedData) {
             score: 4.1,
             reviews: 1250,
             highlights: ["Smooth", "Fruity", "Pear notes"],
+            top_reviews: [
+                { rating: 5, text: "Excellent entry level malt.", user: "John D.", date: "2023-10-01" },
+                { rating: 4, text: "Classic Speyside.", user: "Jane S.", date: "2023-09-15" }
+            ],
             url: "https://www.vivino.com/glenfiddich-12-year-old-single-malt-scotch-whisky/w/6697"
         };
     }

@@ -104,8 +104,8 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
     // Filter valid lines
     let validLines = lines.filter((line: any) => {
         const txt = line.text.trim().toLowerCase();
-        // Remove short lines or low confidence
-        if (txt.length < 3 || line.confidence < 60) return false;
+        // Remove very short lines
+        if (txt.length < 3) return false;
         // Remove lines that are purely technical info (vol, abv)
         if (txt.match(/^(\d{1,2}[.,]?\d{0,1})\s?%/) || txt.match(/(\d{2,4})\s?(cl|ml|l)/)) return false;
         return true;
@@ -125,9 +125,10 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
 
     // Best guess: Largest text is Brand, 2nd largest is Product Name (if not ignored)
     if (validLines.length > 0) {
-        // Find first line that isn't a common keyword (unless it's the ONLY text)
+        // Find first line that isn't a common keyword
         const brandCandidate = validLines.find((l: any) => {
              const t = l.text.toLowerCase();
+             // Less strict ignore list for brand candidate
              return !IGNORED_TERMS.some(term => t.includes(term));
         }) || validLines[0];
 
@@ -145,10 +146,10 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
             productName = validLines[1].text.trim();
         }
     } else if (lines.length > 0) {
-        // Fallback: If "validLines" filtering was too strict, use raw lines
-        // Sort raw lines by confidence or just take top ones
-        brand = lines[0].text.trim();
-        if (lines.length > 1) productName = lines[1].text.trim();
+        // Fallback: Use the line with highest confidence
+        const sortedByConf = [...lines].sort((a: any, b: any) => b.confidence - a.confidence);
+        brand = sortedByConf[0].text.trim();
+        if (sortedByConf.length > 1) productName = sortedByConf[1].text.trim();
     }
 
     // Heuristic: Only fail if ABSOLUTELY no text

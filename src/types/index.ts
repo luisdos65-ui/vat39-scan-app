@@ -1,3 +1,8 @@
+export interface Citation {
+  url: string;
+  quote: string;
+}
+
 export interface ScannedData {
   rawText: string;
   brand?: string;
@@ -11,16 +16,28 @@ export interface ScannedData {
 
 export interface Producer {
   name: string;
+  type?: string;
   website?: string;
+  country?: string;
   region?: string;
-  description?: string;
+  about?: string; // Was description
+  description?: string; // Backward compatibility
+  citations?: Citation[];
   logo?: string;
+}
+
+export interface VivinoReview {
+  rating: number;
+  text: string;
+  user: string;
+  date: string;
 }
 
 export interface VivinoData {
   score: number;
-  reviews: number;
-  highlights: string[];
+  reviews: number; // ratings_count
+  highlights?: string[]; // Kept for UI compatibility
+  top_reviews?: VivinoReview[];
   url?: string;
 }
 
@@ -31,12 +48,22 @@ export interface Product {
   category: string;
   abv?: string;
   volume?: string;
-  vintage?: string;
+  vintage?: string; // age_or_vintage
+  maturation?: string;
+  
   image?: string;
+  
   producer?: Producer;
   vivino?: VivinoData;
+  
   vat39Recommendation?: string; // Why Vat39 offers this
-  productionMethod?: string;    // How it is made
+  productionMethod?: string;    // how_made
+  tastingNotes?: string[];
+  
+  citations?: Citation[];
+  productUrl?: string;
+  verificationStatus?: 'VERIFIED' | 'PARTIAL' | 'UNKNOWN';
+  
   userScore?: number;
   userReview?: string;
   scannedAt: Date;

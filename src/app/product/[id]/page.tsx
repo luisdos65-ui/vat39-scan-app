@@ -3,7 +3,7 @@
 // Force dynamic rendering to avoid static generation of this route
 export const dynamic = 'force-dynamic';
 
-import { Star, Globe, MapPin, ChevronLeft, Share2, ExternalLink, Heart, Award, FlaskConical, Quote } from 'lucide-react';
+import { Star, Globe, MapPin, ChevronLeft, Share2, ExternalLink, Heart, Award, FlaskConical, Quote, CheckCircle2, AlertCircle, HelpCircle, BookOpen } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image'; // Use Next.js Image component
 import Link from 'next/link';
@@ -63,16 +63,43 @@ export default function ProductPage() {
       return (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4 px-6">
               <div className="text-xl font-bold text-text">Product niet gevonden</div>
-              <p className="text-muted">We konden de gescande gegevens niet ophalen. Probeer opnieuw te scannen.</p>
+              <p className="text-muted">We konden de gescande gegevens niet ophalen. Dit kan gebeuren als de foto te groot was of de sessie is verlopen.</p>
               <button 
                 onClick={() => router.push('/scan')}
-                className="px-6 py-3 bg-brand text-white rounded-full font-medium"
+                className="px-6 py-3 bg-brand text-white rounded-full font-medium shadow-lg shadow-brand/20"
               >
                 Opnieuw Scannen
               </button>
           </div>
       );
   }
+
+  // Helper for verification badge
+  const getVerificationBadge = (status?: string) => {
+    switch (status) {
+        case 'VERIFIED':
+            return (
+                <div className="flex items-center space-x-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[10px] font-bold border border-green-200">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>VERIFIED</span>
+                </div>
+            );
+        case 'PARTIAL':
+            return (
+                <div className="flex items-center space-x-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold border border-amber-200">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>PARTIAL</span>
+                </div>
+            );
+        default:
+            return (
+                <div className="flex items-center space-x-1 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-[10px] font-bold border border-gray-200">
+                    <HelpCircle className="w-3 h-3" />
+                    <span>UNVERIFIED</span>
+                </div>
+            );
+    }
+  };
 
   return (
     <div className="pb-8 space-y-6">
@@ -99,7 +126,7 @@ export default function ProductPage() {
         <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-32 h-48 bg-white rounded-lg shadow-md flex items-center justify-center p-2 relative overflow-hidden"
+            className="w-32 h-48 bg-white rounded-lg shadow-md flex items-center justify-center p-2 relative overflow-hidden group"
         >
              {/* Image Placeholder */}
              {product.image && (product.image.startsWith('data:') || product.image.startsWith('http')) ? (
@@ -109,7 +136,7 @@ export default function ProductPage() {
                         alt={product.name} 
                         fill
                         className="object-cover rounded"
-                        unoptimized={true} // Allow external images without strict domain config for now if needed, or rely on config
+                        unoptimized={true} 
                     />
                 </div>
              ) : (
@@ -117,9 +144,17 @@ export default function ProductPage() {
                     Fles Foto
                 </div>
              )}
+             
+             {/* Status Badge Overlay */}
+             <div className="absolute top-2 right-2">
+                 {getVerificationBadge(product.verificationStatus)}
+             </div>
         </motion.div>
+        
         <div className="space-y-1">
-            <div className="text-xs font-semibold text-brand tracking-wider uppercase">{product.category}</div>
+            <div className="flex items-center justify-center space-x-2">
+                <div className="text-xs font-semibold text-brand tracking-wider uppercase">{product.category}</div>
+            </div>
             <h1 className="text-2xl font-bold text-text">{product.name}</h1>
             <div className="flex items-center justify-center space-x-2 text-sm text-muted">
                 <span>{product.abv}</span>
@@ -141,9 +176,13 @@ export default function ProductPage() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-[16px] p-5 shadow-sm border border-divider relative"
+            className="bg-white rounded-[16px] p-5 shadow-sm border border-divider relative overflow-hidden"
         >
-            <div className="flex items-center justify-between mb-3">
+            <div className="absolute top-0 right-0 p-4 opacity-5">
+                <Star className="w-24 h-24" />
+            </div>
+            
+            <div className="flex items-center justify-between mb-3 relative z-10">
                 <h3 className="font-semibold text-text flex items-center gap-2">
                     Vivino Score
                 </h3>
@@ -158,35 +197,56 @@ export default function ProductPage() {
                 )}
             </div>
             
-            {product.vivino.score > 0 ? (
-                <div className="flex items-center space-x-1 mb-2">
-                    {[1, 2, 3, 4].map(i => <Star key={i} className="w-4 h-4 fill-[#B11831] text-[#B11831]" />)}
-                    <Star className="w-4 h-4 text-[#B11831]" />
-                    <span className="text-xs text-muted ml-1">({product.vivino.reviews} reviews)</span>
-                </div>
-            ) : (
-                <div className="mb-2 text-sm text-muted">
-                    Geen directe score gevonden.
-                </div>
-            )}
+            <div className="relative z-10">
+                {product.vivino.score > 0 ? (
+                    <div className="flex items-center space-x-1 mb-2">
+                        {[1, 2, 3, 4].map(i => <Star key={i} className="w-4 h-4 fill-[#B11831] text-[#B11831]" />)}
+                        <Star className="w-4 h-4 text-[#B11831]" />
+                        <span className="text-xs text-muted ml-1">({product.vivino.reviews} reviews)</span>
+                    </div>
+                ) : (
+                    <div className="mb-2 text-sm text-muted">
+                        Geen directe score gevonden.
+                    </div>
+                )}
 
-            <div className="flex flex-wrap gap-2 mt-3 mb-4">
-                {product.vivino.highlights.map(tag => (
-                    <span key={tag} className="px-2 py-1 bg-surface2 text-xs rounded-full text-muted border border-divider">
-                        {tag}
-                    </span>
-                ))}
+                <div className="flex flex-wrap gap-2 mt-3 mb-4">
+                    {product.vivino.highlights?.map(tag => (
+                        <span key={tag} className="px-2 py-1 bg-surface2 text-xs rounded-full text-muted border border-divider">
+                            {tag}
+                        </span>
+                    ))}
+                </div>
+
+                {/* Top Reviews Snippet */}
+                {product.vivino.top_reviews && product.vivino.top_reviews.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-divider space-y-3">
+                        <p className="text-xs font-semibold text-muted uppercase">Community Reviews</p>
+                        {product.vivino.top_reviews.slice(0, 2).map((review, i) => (
+                            <div key={i} className="bg-surface2/50 p-3 rounded-lg text-xs space-y-1">
+                                <div className="flex items-center justify-between text-muted/70">
+                                    <span>{review.user}</span>
+                                    <div className="flex text-[#B11831]">
+                                        <Star className="w-3 h-3 fill-current" />
+                                        <span className="ml-1">{review.rating}</span>
+                                    </div>
+                                </div>
+                                <p className="text-text/80 italic">"{review.text}"</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {product.vivino.url && (
+                     <Link 
+                        href={product.vivino.url} 
+                        target="_blank"
+                        className="w-full mt-4 flex items-center justify-center gap-2 bg-[#B11831] text-white text-sm font-medium py-3 rounded-xl hover:bg-[#901328] transition-colors shadow-lg shadow-[#B11831]/20"
+                    >
+                        Zoek op Vivino <ExternalLink className="w-4 h-4" />
+                    </Link>
+                )}
             </div>
-
-            {product.vivino.url && (
-                 <Link 
-                    href={product.vivino.url} 
-                    target="_blank"
-                    className="w-full flex items-center justify-center gap-2 bg-[#B11831] text-white text-sm font-medium py-2 rounded-lg hover:bg-[#901328] transition-colors"
-                >
-                    Zoek op Vivino <ExternalLink className="w-4 h-4" />
-                </Link>
-            )}
         </motion.div>
       )}
 
@@ -263,6 +323,23 @@ export default function ProductPage() {
                     <p className="text-sm text-muted leading-relaxed pt-2 border-t border-divider border-dashed">
                         {product.producer.description}
                     </p>
+                )}
+                
+                {/* Citations / Sources */}
+                {product.citations && product.citations.length > 0 && (
+                    <div className="mt-3 pt-2">
+                        <div className="text-[10px] uppercase text-muted font-semibold mb-2 flex items-center gap-1">
+                            <BookOpen className="w-3 h-3" /> Bronnen
+                        </div>
+                        <div className="space-y-2">
+                            {product.citations.map((cite, idx) => (
+                                <Link key={idx} href={cite.url} target="_blank" className="block bg-surface2/50 p-2 rounded hover:bg-surface2 transition-colors">
+                                    <p className="text-[10px] text-text/80 italic line-clamp-2">"{cite.quote}"</p>
+                                    <div className="text-[9px] text-brand mt-1 truncate">{new URL(cite.url).hostname}</div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
                 )}
             </div>
         </motion.div>
