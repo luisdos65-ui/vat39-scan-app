@@ -7,14 +7,43 @@ import { useRouter } from 'next/navigation';
 import { processScan } from '@/lib/services/product';
 
 export default function ScanPage() {
-  const [isScanning, setIsScanning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [errorLog, setErrorLog] = useState<string[]>([]); // New debug log state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      await handleScan(e.target.files[0]);
+  const addLog = (msg: string) => {
+    console.log(msg);
+    setErrorLog(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${msg}`]);
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setIsProcessing(true);
+      setErrorLog([]); // Clear old logs
+      addLog(`Start scan: ${file.name} (${(file.size / 1024).toFixed(0)}KB)`);
+      
+      try {
+        addLog("Processing image...");
+        const product = await processScan(file);
+        addLog(`Scan success: ${product.name}`);
+        
+        // Save to local history
+        try {
+            const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
+            localStorage.setItem('recentScans', JSON.stringify([product, ...recentScans].slice(0, 10)));
+        } catch (storageError) {
+             addLog("Storage Warning: Could not save history");
+             console.error(storageError);
+        }
+
+        router.push(`/product/${product.id}`);
+      } catch (error) {
+        console.error('Scan failed:', error);
+        addLog(`ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -32,25 +61,7 @@ export default function ScanPage() {
     }
   }, []);
 
-  const handleScan = async (file: File) => {
-    setIsScanning(false);
-    setIsProcessing(true);
-    
-    try {
-      const product = await processScan(file);
-      // Save to local storage to simulate "database" for the demo
-      const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
-      recentScans.unshift(product);
-      localStorage.setItem('recentScans', JSON.stringify(recentScans));
-      
-      // Navigate to product page
-      router.push(`/product/${product.id}`);
-    } catch (error) {
-      console.error("Scan failed:", error);
-      alert("Er ging iets mis bij het scannen. Probeer het opnieuw.");
-      setIsProcessing(false);
-    }
-  };
+
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
@@ -150,9 +161,18 @@ export default function ScanPage() {
             </p>
          </div>
       </motion.div>
-      
+   {/* Debug Logs */}
+      {errorLog.length > 0 && (
+          <div className="mt-4 p-2 bg-black/5 rounded text-[10px] font-mono text-left w-full max-w-xs mx-auto">
+            {errorLog.map((log, i) => (
+                <div key={i} className="text-red-600 truncate">{log}</div>
+            ))}
+          </div>
+      )}
+
+      {/* Version Footer */}
       <div className="text-[10px] text-muted/50 pt-4">
-        v1.3.3 - Live (Image/Fetch Fix) - {new Date().toLocaleTimeString()}
+        v1.3.4 - Debug Mode - {new Date().toLocaleTimeString()}
       </div>
     </div>
   );

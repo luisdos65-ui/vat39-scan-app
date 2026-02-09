@@ -90,10 +90,21 @@ export default function ProfilePage() {
         </button>
 
         <div className="text-center space-y-2 py-4">
-            <p className="text-xs text-muted">Versie 1.3.3 (Live)</p>
+            <p className="text-xs text-muted">Versie 1.3.4 (Debug)</p>
             <p className="text-[10px] text-muted max-w-[250px] mx-auto leading-relaxed">
                 Drink met mate. Geen 18, geen alcohol.
             </p>
+            <button 
+                onClick={() => {
+                    if(confirm('Weet je zeker dat je alle app data wilt wissen?')) {
+                        localStorage.clear();
+                        window.location.reload();
+                    }
+                }}
+                className="text-[10px] text-red-400 underline mt-2"
+            >
+                Reset App Data (Bij problemen)
+            </button>
         </div>
       </div>
     </div>
