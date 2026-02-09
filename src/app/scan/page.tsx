@@ -88,10 +88,20 @@ export default function ScanPage() {
         // Save to local history
         try {
             const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
-            localStorage.setItem('recentScans', JSON.stringify([product, ...recentScans].slice(0, 10)));
+            try {
+                localStorage.setItem('recentScans', JSON.stringify([product, ...recentScans].slice(0, 10)));
+            } catch (quotaError) {
+                console.warn("Storage quota exceeded, clearing old scans to make space.");
+                // Try saving only the new product
+                localStorage.setItem('recentScans', JSON.stringify([product]));
+            }
         } catch (storageError) {
              addLog("Storage Warning: Could not save history");
              console.error(storageError);
+             // Even if storage fails, we should try to persist this one item for the next page
+             try {
+                sessionStorage.setItem('currentProduct', JSON.stringify(product));
+             } catch(e) {}
         }
 
         router.push(`/product/${product.id}`);

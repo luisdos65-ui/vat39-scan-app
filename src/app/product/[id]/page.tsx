@@ -32,6 +32,16 @@ export default function ProductPage() {
 
     // 1. Try to find product in recent scans (simulating DB fetch)
     try {
+        // First check session storage for immediate handover
+        const sessionStored = sessionStorage.getItem('currentProduct');
+        if (sessionStored) {
+            const p = JSON.parse(sessionStored);
+            if (p.id === id) {
+                setProduct(p);
+                return;
+            }
+        }
+
         const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
         const foundInScans = recentScans.find((p: Product) => p.id === id);
         if (foundInScans) {
