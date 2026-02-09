@@ -13,7 +13,16 @@ Zorg dat deze code in een GitHub repository staat.
 1. Ga naar [vercel.com](https://vercel.com) en log in (kan met GitHub).
 2. Klik op **"Add New..."** -> **"Project"**.
 3. Importeer je GitHub repository.
-4. Klik op **Deploy**.
+4. **BELANGRIJK:** Voeg bij "Environment Variables" de sleutel `GEMINI_API_KEY` toe (voor de AI scanner).
+5. Klik op **Deploy**.
+
+## Stap 2.1: Updaten of Herstarten (Redeploy)
+Als je later een Environment Variable (zoals de API key) toevoegt:
+1. Ga naar je project in Vercel.
+2. Ga naar de tab **Deployments**.
+3. Klik op de drie puntjes (...) naast de bovenste/laatste deployment.
+4. Kies **Redeploy**.
+OF: Doe een nieuwe 'push' naar GitHub (elke codewijziging start automatisch een nieuwe deploy).
 
 ## Stap 3: Domein Koppelen (scan.vat39.nl)
 Zodra de app online staat op een `vercel.app` domein:
