@@ -54,11 +54,16 @@ export async function findProducerInfo(scannedData: ScannedData): Promise<Produc
   }
 
   // Dynamic Fallback with Search Link (simulating "PARTIAL" or "UNKNOWN" status)
+  // IMPROVEMENT: If we have a brand name, use it! Don't just say "Onbekend".
+  const displayName = (brand && brand !== 'Onbekend Merk') ? brand : "Onbekend";
+  
   return {
-    name: brand || "Onbekend",
+    name: displayName,
+    type: displayName !== "Onbekend" ? "Wijnproducent" : "Onbekend",
     website: `https://www.google.com/search?q=${searchQuery}`,
-    about: `Klik om meer informatie over ${brand} te zoeken op Google.`,
-    description: `Klik om meer informatie over ${brand} te zoeken op Google.`
+    about: `Klik om meer informatie over ${displayName} te zoeken op Google.`,
+    description: `Klik om meer informatie over ${displayName} te zoeken op Google.`,
+    citations: []
   };
 }
 

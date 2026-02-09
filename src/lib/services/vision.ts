@@ -29,7 +29,7 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
         setTimeout(() => reject(new Error('OCR Timeout')), 25000)
     );
 
-    // Helper to resize image
+    // Helper to resize and preprocess image
     const resizeImage = (file: File): Promise<Blob> => {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -37,7 +37,7 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
                 const canvas = document.createElement('canvas');
                 let width = img.width;
                 let height = img.height;
-                const MAX_SIZE = 1500;
+                const MAX_SIZE = 1800; // Increased from 1500 for better detail
 
                 if (width > height) {
                     if (width > MAX_SIZE) {
@@ -60,8 +60,25 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
                 }
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Note: Tesseract v5/v6 handles binarization well internally.
-                // We skip manual grayscale to avoid potential canvas data issues across devices.
+                // Preprocessing: Grayscale + High Contrast for better OCR
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                const contrast = 1.2; // Increase contrast by 20%
+                const intercept = 128 * (1 - contrast);
+
+                for (let i = 0; i < data.length; i += 4) {
+                    // Grayscale (Luma)
+                    let gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                    // Apply Contrast
+                    gray = gray * contrast + intercept;
+                    // Clamp
+                    gray = Math.max(0, Math.min(255, gray));
+                    
+                    data[i] = gray;     // R
+                    data[i + 1] = gray; // G
+                    data[i + 2] = gray; // B
+                }
+                ctx.putImageData(imageData, 0, 0);
 
                 canvas.toBlob((blob) => {
                     if (blob) resolve(blob);
@@ -79,7 +96,7 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
 
         const result = await Tesseract.recognize(
             processedImage,
-            'eng+nld', 
+            'eng+nld+fra', // Added French for wine labels
             { logger: m => console.log(m) }
         );
         return result;
