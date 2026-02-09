@@ -30,14 +30,14 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
     );
 
     // Helper to resize and preprocess image
-    const resizeImage = (file: File): Promise<Blob> => {
+    const preprocessImage = (file: File, mode: 'grayscale' | 'binary' = 'grayscale'): Promise<Blob> => {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 let width = img.width;
                 let height = img.height;
-                const MAX_SIZE = 1800; // Increased from 1500 for better detail
+                const MAX_SIZE = 1800;
 
                 if (width > height) {
                     if (width > MAX_SIZE) {
@@ -60,24 +60,40 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
                 }
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Preprocessing: Grayscale + High Contrast for better OCR
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const data = imageData.data;
-                const contrast = 1.2; // Increase contrast by 20%
-                const intercept = 128 * (1 - contrast);
 
-                for (let i = 0; i < data.length; i += 4) {
-                    // Grayscale (Luma)
-                    let gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-                    // Apply Contrast
-                    gray = gray * contrast + intercept;
-                    // Clamp
-                    gray = Math.max(0, Math.min(255, gray));
+                if (mode === 'grayscale') {
+                    // Preprocessing: Grayscale + High Contrast
+                    const contrast = 1.2; 
+                    const intercept = 128 * (1 - contrast);
+                    for (let i = 0; i < data.length; i += 4) {
+                        let gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                        gray = gray * contrast + intercept;
+                        gray = Math.max(0, Math.min(255, gray));
+                        data[i] = data[i + 1] = data[i + 2] = gray;
+                    }
+                } else if (mode === 'binary') {
+                    // Preprocessing: Adaptive Thresholding (Simple Binarization)
+                    // First pass: Calculate average brightness
+                    let totalBrightness = 0;
+                    for (let i = 0; i < data.length; i += 4) {
+                        totalBrightness += data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                    }
+                    const avgBrightness = totalBrightness / (data.length / 4);
                     
-                    data[i] = gray;     // R
-                    data[i + 1] = gray; // G
-                    data[i + 2] = gray; // B
+                    // Second pass: Apply threshold
+                    const threshold = avgBrightness * 0.9; // Slightly lower than average to keep text (usually dark on light)
+                    // Note: If text is light on dark, this might need inversion. 
+                    // For now assume standard label (dark text on light paper) or rely on Tesseract's ability to handle inverted.
+                    
+                    for (let i = 0; i < data.length; i += 4) {
+                        const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                        const val = gray < threshold ? 0 : 255;
+                        data[i] = data[i + 1] = data[i + 2] = val;
+                    }
                 }
+
                 ctx.putImageData(imageData, 0, 0);
 
                 canvas.toBlob((blob) => {
@@ -90,15 +106,33 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
         });
     };
 
-    const recognitionPromise = (async () => {
-        // Resize image first to improve performance and stability
-        const processedImage = await resizeImage(imageFile);
-
-        const result = await Tesseract.recognize(
-            processedImage,
-            'eng+nld+fra', // Added French for wine labels
+    const runOCR = async (blob: Blob) => {
+         return await Tesseract.recognize(
+            blob,
+            'eng+nld+fra', 
             { logger: m => console.log(m) }
         );
+    };
+
+    const recognitionPromise = (async () => {
+        // Attempt 1: Grayscale (Better for photos with shadows)
+        console.log("OCR Attempt 1: Grayscale");
+        const grayBlob = await preprocessImage(imageFile, 'grayscale');
+        let result = await runOCR(grayBlob);
+
+        // Check quality
+        if (result.data.confidence < 60 || result.data.text.trim().length < 10) {
+            console.log("OCR Low Confidence/Text. Retrying with Binary...");
+            // Attempt 2: Binary (Better for high contrast/noisy backgrounds)
+            const binaryBlob = await preprocessImage(imageFile, 'binary');
+            const binaryResult = await runOCR(binaryBlob);
+            
+            // If binary result is better (more text or higher confidence), use it
+            if (binaryResult.data.text.trim().length > result.data.text.trim().length) {
+                console.log("Using Binary Result");
+                result = binaryResult;
+            }
+        }
         return result;
     })();
 
