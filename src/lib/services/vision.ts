@@ -153,14 +153,35 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
     ];
     // REMOVED from ignore list: 'chateau', 'domaine', 'estate', 'tenuta', 'bodega', 'wine'
 
+    // Helper to clean garbage text
+    const cleanLine = (text: string) => {
+        // Remove pipe characters, brackets, common OCR noise
+        return text.replace(/[|\[\]{}_=<>~]/g, '').trim();
+    };
+
+    const isGarbage = (text: string) => {
+        if (!text) return true;
+        // Check for meaningful content (at least 3 alphanumeric chars)
+        const alphaNumeric = text.replace(/[^a-zA-Z0-9]/g, '');
+        if (alphaNumeric.length < 3) return true;
+        
+        // Check ratio of symbols to length
+        const symbols = text.replace(/[a-zA-Z0-9\s.,-]/g, '').length;
+        if (symbols > text.length * 0.3) return true; // >30% symbols is garbage
+
+        return false;
+    };
+
     // Filter valid lines
-    let validLines = lines.filter((line: any) => {
-        const txt = line.text.trim().toLowerCase();
-        // Remove very short lines
-        if (txt.length < 3) return false;
-        // Remove lines that are purely technical info (vol, abv)
-        if (txt.match(/^(\d{1,2}[.,]?\d{0,1})\s?%/) || txt.match(/(\d{2,4})\s?(cl|ml|l)/)) return false;
-        return true;
+    let validLines = lines
+        .map((line: any) => ({ ...line, text: cleanLine(line.text) })) // Clean first
+        .filter((line: any) => {
+            const txt = line.text.toLowerCase();
+            if (isGarbage(line.text)) return false;
+            
+            // Remove lines that are purely technical info (vol, abv)
+            if (txt.match(/^(\d{1,2}[.,]?\d{0,1})\s?%/) || txt.match(/(\d{2,4})\s?(cl|ml|l)/)) return false;
+            return true;
     });
 
     // Calculate height for each line (to find the biggest text -> likely Brand)

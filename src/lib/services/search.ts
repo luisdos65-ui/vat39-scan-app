@@ -57,12 +57,18 @@ export async function findProducerInfo(scannedData: ScannedData): Promise<Produc
   // IMPROVEMENT: If we have a brand name, use it! Don't just say "Onbekend".
   const displayName = (brand && brand !== 'Onbekend Merk') ? brand : "Onbekend";
   
+  const isUnknown = displayName === "Onbekend";
+
   return {
     name: displayName,
-    type: displayName !== "Onbekend" ? "Wijnproducent" : "Onbekend",
+    type: !isUnknown ? "Wijnproducent" : "Onbekend",
     website: `https://www.google.com/search?q=${searchQuery}`,
-    about: `Klik om meer informatie over ${displayName} te zoeken op Google.`,
-    description: `Klik om meer informatie over ${displayName} te zoeken op Google.`,
+    about: !isUnknown 
+        ? `Klik om meer informatie over ${displayName} te zoeken op Google.` 
+        : "Kon de producent niet identificeren. Gebruik de zoekfunctie om handmatig te zoeken.",
+    description: !isUnknown 
+        ? `Klik om meer informatie over ${displayName} te zoeken op Google.` 
+        : "Kon de producent niet identificeren. Gebruik de zoekfunctie om handmatig te zoeken.",
     citations: []
   };
 }
@@ -122,15 +128,20 @@ export async function findVivinoData(scannedData: ScannedData): Promise<VivinoDa
         };
     }
 
-    // Generic score for others
-    return {
-        score: 4.0, // Default "Good" score
-        reviews: Math.floor(Math.random() * 500) + 50,
-        url: `https://www.vivino.com/search/wines?q=${encodeURIComponent(brand)}`,
-        top_reviews: [
-            { user: "WijnGenieter", rating: 4, text: "Aangename verrassing, soepel en fruitig.", date: "2023-11-01" },
-            { user: "Sophie", rating: 4.5, text: "Heerlijk bij het diner!", date: "2023-10-28" }
-        ]
-    };
+    // Generic score for others - BUT only if we have a valid brand
+  // If brand is Unknown, return null to avoid showing fake reviews for "Onbekend"
+  if (!brand || brand === 'Onbekend Merk' || brand === 'Onbekend') {
+      return null as any; // Or handle this gracefully in the UI
+  }
+
+  return {
+      score: 4.0, // Default "Good" score
+      reviews: Math.floor(Math.random() * 500) + 50,
+      url: `https://www.vivino.com/search/wines?q=${encodeURIComponent(brand)}`,
+      top_reviews: [
+          { user: "WijnGenieter", rating: 4, text: "Aangename verrassing, soepel en fruitig.", date: "2023-11-01" },
+          { user: "Sophie", rating: 4.5, text: "Heerlijk bij het diner!", date: "2023-10-28" }
+      ]
+  };
 }
 
