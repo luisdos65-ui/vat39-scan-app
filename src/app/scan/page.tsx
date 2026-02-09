@@ -171,8 +171,8 @@ export default function ScanPage() {
       )}
 
       {/* Version Footer */}
-      <div className="text-[10px] text-muted/50 pt-4">
-        v1.3.6 - Live (Base64 Fix) - {new Date().toLocaleTimeString()}
+      <div className="text-[10px] text-muted/50 pt-4 text-center">
+        v1.3.7 - Clean Deploy - {new Date().toLocaleTimeString()}
       </div>
     </div>
   );
