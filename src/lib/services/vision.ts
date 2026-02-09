@@ -1,4 +1,5 @@
 import { ScannedData } from '@/types';
+import { compressImage } from '@/lib/utils';
 // Remove top-level import to prevent server-side build issues
 // import Tesseract from 'tesseract.js';
 
@@ -9,8 +10,20 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
   // 1. Try Google Gemini (AI) First
   try {
       console.log("Attempting Google AI analysis...");
+      
+      // COMPRESS IMAGE FIRST!
+      // Vercel Serverless Function Payload Limit is 4.5MB.
+      // High-res camera photos can easily exceed this.
+      // Resize to max 1024px and 0.8 quality -> usually < 500KB
+      const base64DataUrl = await compressImage(imageFile, 1024, 0.8);
+      
+      // Convert Data URL to Blob/File for FormData
+      const res = await fetch(base64DataUrl);
+      const blob = await res.blob();
+      const compressedFile = new File([blob], "compressed.jpg", { type: "image/jpeg" });
+
       const formData = new FormData();
-      formData.append('image', imageFile);
+      formData.append('image', compressedFile);
 
       const response = await fetch('/api/analyze', {
           method: 'POST',
