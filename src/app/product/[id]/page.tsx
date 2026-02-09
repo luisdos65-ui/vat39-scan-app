@@ -316,12 +316,20 @@ export default function ProductPage() {
                             <BookOpen className="w-3 h-3" /> Bronnen
                         </div>
                         <div className="space-y-2">
-                            {product.citations.map((cite, idx) => (
-                                <Link key={idx} href={cite.url} target="_blank" className="block bg-surface2/50 p-2 rounded hover:bg-surface2 transition-colors">
-                                    <p className="text-[10px] text-text/80 italic line-clamp-2">"{cite.quote}"</p>
-                                    <div className="text-[9px] text-brand mt-1 truncate">{new URL(cite.url).hostname}</div>
-                                </Link>
-                            ))}
+                            {product.citations.map((cite, idx) => {
+                                let hostname = "Bron";
+                                try {
+                                    hostname = new URL(cite.url).hostname;
+                                } catch (e) {
+                                    // Fallback if URL is invalid
+                                }
+                                return (
+                                    <Link key={idx} href={cite.url} target="_blank" className="block bg-surface2/50 p-2 rounded hover:bg-surface2 transition-colors">
+                                        <p className="text-[10px] text-text/80 italic line-clamp-2">"{cite.quote}"</p>
+                                        <div className="text-[9px] text-brand mt-1 truncate">{hostname}</div>
+                                    </Link>
+                                );
+                            })}
                         </div>
                     </div>
                 )}

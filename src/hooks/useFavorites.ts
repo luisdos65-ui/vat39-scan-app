@@ -5,9 +5,15 @@ export function useFavorites() {
   const [favorites, setFavorites] = useState<Product[]>([]);
 
   useEffect(() => {
-    const stored = localStorage.getItem('favorites');
-    if (stored) {
-      setFavorites(JSON.parse(stored));
+    try {
+      const stored = localStorage.getItem('favorites');
+      if (stored) {
+        setFavorites(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error("Failed to parse favorites", e);
+      // Reset favorites if corrupted
+      localStorage.removeItem('favorites');
     }
   }, []);
 
