@@ -7,8 +7,11 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
   console.log('Processing image with Tesseract:', imageFile.name);
 
   try {
-    // Dynamic import to ensure it only loads when called (Client Side)
-    const Tesseract = (await import('tesseract.js')).default;
+    // Check if Tesseract is loaded from CDN
+    const Tesseract = (window as any).Tesseract;
+    if (!Tesseract) {
+        throw new Error("Tesseract library not loaded");
+    }
 
     // Timeout race to prevent hanging forever
     const timeoutPromise = new Promise<ScannedData>((_, reject) => 

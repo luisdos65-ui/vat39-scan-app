@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-surface2 text-text`}
       >
+        <Script 
+          src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" 
+          strategy="lazyOnload"
+        />
         <div className="mx-auto max-w-md min-h-[100dvh] bg-bg relative shadow-2xl shadow-black/5 flex flex-col">
             <main className="flex-1 pb-24 px-4 pt-4">
                 {children}
