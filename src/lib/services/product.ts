@@ -21,9 +21,8 @@ export async function processTextSearch(query: string): Promise<Product> {
   };
 
   // Parallel fetch for Enrichment
-  const [producer, vivino, vat39Rec, production] = await Promise.all([
+  const [producer, vat39Rec, production] = await Promise.all([
     findProducerInfo(scannedData),
-    findVivinoData(scannedData),
     findVat39Recommendation(scannedData),
     findProductionMethod(scannedData)
   ]);
@@ -37,7 +36,6 @@ export async function processTextSearch(query: string): Promise<Product> {
     category: "Gezocht Product",
     image: "https://images.unsplash.com/photo-1569919659476-f0852f6834b7?auto=format&fit=crop&q=80&w=1000", // Generic search image
     producer,
-    vivino,
     vat39Recommendation: vat39Rec,
     productionMethod: production,
     verificationStatus,

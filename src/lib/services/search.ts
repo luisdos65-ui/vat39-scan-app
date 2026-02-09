@@ -67,40 +67,6 @@ export async function findProducerInfo(scannedData: ScannedData): Promise<Produc
   };
 }
 
-export async function findVivinoData(scannedData: ScannedData): Promise<VivinoData> {
-    // Simulate Vivino lookup
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const queryTerm = (scannedData.brand && scannedData.brand !== 'Onbekend Merk')
-        ? `${scannedData.brand || ''} ${scannedData.productName || ''} ${scannedData.vintage || ''}`
-        : scannedData.rawText.substring(0, 100).replace(/\n/g, ' ');
-
-    const query = queryTerm.trim();
-    const searchUrl = `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`;
-
-    // If we have a very specific mock match (Glenfiddich), keep it for demo
-    if (scannedData.brand?.toLowerCase().includes('glenfiddich') && scannedData.productName?.includes('12')) {
-         return {
-            score: 4.1,
-            reviews: 1250,
-            highlights: ["Smooth", "Fruity", "Pear notes"],
-            top_reviews: [
-                { rating: 5, text: "Excellent entry level malt.", user: "John D.", date: "2023-10-01" },
-                { rating: 4, text: "Classic Speyside.", user: "Jane S.", date: "2023-09-15" }
-            ],
-            url: "https://www.vivino.com/glenfiddich-12-year-old-single-malt-scotch-whisky/w/6697"
-        };
-    }
-
-    // Generic "Search on Vivino" result
-    return {
-        score: 0, // 0 indicates "Check Vivino"
-        reviews: 0,
-        highlights: ["Tap to search"],
-        url: searchUrl
-    };
-}
-
 export async function findVat39Recommendation(scannedData: ScannedData): Promise<string> {
     await new Promise(resolve => setTimeout(resolve, 400));
     
