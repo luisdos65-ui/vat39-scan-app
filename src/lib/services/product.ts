@@ -62,12 +62,11 @@ export async function processScan(imageFile: File): Promise<Product> {
      throw new Error("Geen tekst gevonden. Probeer handmatig te zoeken.");
   }
 
-  // 2. Parallel fetch for Enrichment (Producer info + Vivino + Vat39 + Production)
-  // Corresponds to Base44 Steps 2 (Search), 3 (Parse), 4 (Verify), 5 (Vivino)
+  // Parallel fetch for Enrichment (Producer info + Vat39 + Production)
+  // Corresponds to Base44 Steps 2 (Search), 3 (Parse), 4 (Verify)
   // We execute them in parallel for speed, but logically they map to the requested flow.
-  const [producer, vivino, vat39Rec, production] = await Promise.all([
+  const [producer, vat39Rec, production] = await Promise.all([
     findProducerInfo(scannedData),
-    findVivinoData(scannedData),
     findVat39Recommendation(scannedData),
     findProductionMethod(scannedData)
   ]);
