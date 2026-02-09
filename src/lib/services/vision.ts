@@ -2,9 +2,46 @@ import { ScannedData } from '@/types';
 // Remove top-level import to prevent server-side build issues
 // import Tesseract from 'tesseract.js';
 
-// Real implementation using Tesseract.js (Client-side OCR)
+// Real implementation using Tesseract.js (Client-side OCR) AND Google Gemini (Server-side AI)
 export async function extractDataFromImage(imageFile: File): Promise<ScannedData> {
-  console.log('Processing image with Tesseract:', imageFile.name);
+  console.log('Processing image...', imageFile.name);
+
+  // 1. Try Google Gemini (AI) First
+  try {
+      console.log("Attempting Google AI analysis...");
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const response = await fetch('/api/analyze', {
+          method: 'POST',
+          body: formData
+      });
+
+      if (response.ok) {
+          const data = await response.json();
+          console.log("Google AI Result:", data);
+          
+          if (data.brand && data.brand !== "null") {
+              return {
+                  rawText: JSON.stringify(data),
+                  brand: data.brand,
+                  productName: data.productName || "",
+                  category: data.type || "Wijn / Gedistilleerd",
+                  abv: data.abv ? `${data.abv}` : undefined,
+                  volume: data.volume ? `${data.volume}` : undefined,
+                  vintage: data.vintage ? `${data.vintage}` : undefined,
+                  confidence: 'high'
+              };
+          }
+      } else {
+          console.warn("Google AI not available or failed, falling back to Tesseract OCR.");
+      }
+  } catch (e) {
+      console.error("Google AI Error:", e);
+      // Continue to Tesseract fallback
+  }
+
+  console.log('Falling back to Tesseract OCR...');
 
   try {
     // Check if Tesseract is loaded from CDN, with retry mechanism

@@ -1,0 +1,79 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Initialize Gemini
+// NOTE: User must provide GEMINI_API_KEY in .env
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+
+export async function POST(req: NextRequest) {
+    try {
+        if (!process.env.GEMINI_API_KEY) {
+            return NextResponse.json(
+                { error: "Server configuratie fout: GEMINI_API_KEY ontbreekt." },
+                { status: 500 }
+            );
+        }
+
+        const formData = await req.formData();
+        const file = formData.get('image') as File;
+
+        if (!file) {
+            return NextResponse.json({ error: "Geen afbeelding ontvangen" }, { status: 400 });
+        }
+
+        // Convert File to ArrayBuffer then to Base64
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64Image = buffer.toString('base64');
+
+        // Use Gemini 1.5 Flash for speed and multimodal capabilities
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const prompt = `
+            Analyze this wine or spirit label image strictly and return a JSON object.
+            Do not invent information. If a field is not visible, use null.
+            
+            Extract the following:
+            - brand: The main brand name (e.g. "Glenfiddich", "Chateau Margaux")
+            - productName: The specific product name (e.g. "12 Year Old", "Grand Vin")
+            - type: "Wijn", "Whisky", "Gin", "Rum", "Vodka", or "Overig"
+            - vintage: Year (e.g. "2018")
+            - abv: Alcohol percentage (e.g. "40%")
+            - volume: Bottle size (e.g. "70cl", "750ml")
+            - producer: Full producer name if different from brand
+            - region: Region or Country of origin (e.g. "Speyside, Scotland", "Bordeaux, France")
+            
+            Return ONLY the raw JSON string, no markdown formatting.
+        `;
+
+        const result = await model.generateContent([
+            prompt,
+            {
+                inlineData: {
+                    data: base64Image,
+                    mimeType: file.type || 'image/jpeg'
+                }
+            }
+        ]);
+
+        const responseText = result.response.text();
+        
+        // Clean markdown code blocks if present
+        const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        
+        try {
+            const data = JSON.parse(cleanedText);
+            return NextResponse.json(data);
+        } catch (parseError) {
+            console.error("Failed to parse Gemini response:", responseText);
+            return NextResponse.json({ error: "Kon antwoord niet verwerken" }, { status: 500 });
+        }
+
+    } catch (error) {
+        console.error("Gemini API Error:", error);
+        return NextResponse.json(
+            { error: "Fout bij analyseren van afbeelding" },
+            { status: 500 }
+        );
+    }
+}
