@@ -1,7 +1,11 @@
 'use client';
 
+// Force dynamic rendering to avoid static generation of this route
+export const dynamic = 'force-dynamic';
+
 import { Star, Globe, MapPin, ChevronLeft, Share2, ExternalLink, Heart } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
+import Image from 'next/image'; // Use Next.js Image component
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
@@ -98,9 +102,16 @@ export default function ProductPage() {
             className="w-32 h-48 bg-white rounded-lg shadow-md flex items-center justify-center p-2 relative overflow-hidden"
         >
              {/* Image Placeholder */}
-             {product.image && product.image.startsWith('blob:') ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={product.image} alt={product.name} className="w-full h-full object-cover rounded" />
+             {product.image && (product.image.startsWith('blob:') || product.image.startsWith('http')) ? (
+                <div className="relative w-full h-full">
+                    <Image 
+                        src={product.image} 
+                        alt={product.name} 
+                        fill
+                        className="object-cover rounded"
+                        unoptimized={true} // Allow external images without strict domain config for now if needed, or rely on config
+                    />
+                </div>
              ) : (
                 <div className="w-full h-full bg-surface2 rounded flex items-center justify-center text-xs text-muted">
                     Fles Foto
