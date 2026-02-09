@@ -86,6 +86,11 @@ export async function findVat39Recommendation(scannedData: ScannedData): Promise
         return "Een klassieke Franse wijn die perfect past in ons assortiment van traditionele wijnhuizen. Geselecteerd door onze specialisten vanwege de uitstekende prijs-kwaliteitverhouding.";
     }
 
+    // For unknown brands, do not return a fake recommendation
+    if (!brand || brand === 'onbekend merk' || brand === 'unknown') {
+        return "";
+    }
+
     return "Geselecteerd door Vat39 De Specialist vanwege het unieke karakter en de authentieke productiemethode. Een aanwinst voor elke liefhebber.";
 }
 
@@ -93,6 +98,12 @@ export async function findProductionMethod(scannedData: ScannedData): Promise<st
     await new Promise(resolve => setTimeout(resolve, 400));
     
     const text = scannedData.rawText.toLowerCase();
+    const brand = scannedData.brand?.toLowerCase() || '';
+    
+    // If brand is unknown and we have very little text, don't return generic method
+    if ((!brand || brand === 'onbekend merk' || brand === 'unknown') && text.length < 20) {
+        return "";
+    }
     
     if (text.includes('whisky') || text.includes('malt')) {
         return "Gedistilleerd in koperen pot stills en jarenlang gerijpt op eikenhouten vaten voor een rijke, complexe smaakontwikkeling.";
@@ -106,7 +117,12 @@ export async function findProductionMethod(scannedData: ScannedData): Promise<st
         return "Geproduceerd via koude vergisting op roestvrijstalen tanks om de frisse fruitaroma's optimaal te behouden.";
     }
 
-    return "Geproduceerd volgens traditionele methoden met respect voor het terroir en de natuurlijke omgeving.";
+    // Only return generic method if we have some confidence it's a beverage
+    if (text.length > 20) {
+        return "Geproduceerd volgens traditionele methoden met respect voor het terroir en de natuurlijke omgeving.";
+    }
+    
+    return "";
 }
 
 export async function findVivinoData(scannedData: ScannedData): Promise<VivinoData> {
@@ -130,8 +146,9 @@ export async function findVivinoData(scannedData: ScannedData): Promise<VivinoDa
 
     // Generic score for others - BUT only if we have a valid brand
   // If brand is Unknown, return null to avoid showing fake reviews for "Onbekend"
-  if (!brand || brand === 'Onbekend Merk' || brand === 'Onbekend') {
-      return null as any; // Or handle this gracefully in the UI
+  // Note: brand is already lowercased here
+  if (!brand || brand === 'onbekend merk' || brand === 'onbekend' || brand === 'unknown') {
+      return null as any; 
   }
 
   return {
