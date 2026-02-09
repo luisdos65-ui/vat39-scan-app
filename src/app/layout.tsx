@@ -48,7 +48,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-surface2 text-text`}
       >
         <Script 
-          src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" 
+          src="https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js" 
           strategy="lazyOnload"
         />
         <div className="mx-auto max-w-md min-h-[100dvh] bg-bg relative shadow-2xl shadow-black/5 flex flex-col">

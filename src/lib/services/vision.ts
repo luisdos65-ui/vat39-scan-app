@@ -26,13 +26,56 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
 
     // Timeout race to prevent hanging forever
     const timeoutPromise = new Promise<ScannedData>((_, reject) => 
-        setTimeout(() => reject(new Error('OCR Timeout')), 15000)
+        setTimeout(() => reject(new Error('OCR Timeout')), 25000)
     );
 
+    // Helper to resize image
+    const resizeImage = (file: File): Promise<Blob> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const MAX_SIZE = 1500;
+
+                if (width > height) {
+                    if (width > MAX_SIZE) {
+                        height *= MAX_SIZE / width;
+                        width = MAX_SIZE;
+                    }
+                } else {
+                    if (height > MAX_SIZE) {
+                        width *= MAX_SIZE / height;
+                        height = MAX_SIZE;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Canvas context not available'));
+                    return;
+                }
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob((blob) => {
+                    if (blob) resolve(blob);
+                    else reject(new Error('Canvas to Blob failed'));
+                }, 'image/jpeg', 0.8);
+            };
+            img.onerror = reject;
+            img.src = URL.createObjectURL(file);
+        });
+    };
+
     const recognitionPromise = (async () => {
+        // Resize image first to improve performance and stability
+        const processedImage = await resizeImage(imageFile);
+
         const result = await Tesseract.recognize(
-            imageFile,
-            'eng', 
+            processedImage,
+            'eng+nld', 
             { logger: m => console.log(m) }
         );
         return result;
