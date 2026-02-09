@@ -110,7 +110,12 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
          return await Tesseract.recognize(
             blob,
             'eng+nld+fra', 
-            { logger: m => console.log(m) }
+            { 
+                logger: m => console.log(m),
+                // PSM 3 = Auto page segmentation with no OSD (Orientation and Script Detection)
+                // This is generally more robust for mixed layout labels than default
+                tessedit_pageseg_mode: 3, 
+            }
         );
     };
 

@@ -170,8 +170,8 @@ export default function ProductPage() {
         </div>
       </div>
 
-      {/* Vivino Card */}
-      {product.vivino && (
+      {/* Score Card - Vat39 Score (User) or Vivino Score */}
+      {(product.userScore || product.vivino) && (
         <motion.div 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -184,21 +184,35 @@ export default function ProductPage() {
             
             <div className="flex items-start justify-between mb-4 relative z-10">
                 <div>
-                    <h3 className="font-semibold text-text">Vivino Score</h3>
-                    <div className="flex items-baseline space-x-2 mt-1">
-                        <span className="text-3xl font-bold text-brand">{product.vivino.score}</span>
-                        <span className="text-sm text-muted">/ 5.0</span>
-                    </div>
-                    <div className="text-xs text-muted mt-1">{product.vivino.reviews} beoordelingen</div>
+                    {product.userScore ? (
+                        <>
+                            <h3 className="font-semibold text-brand">Vat39 Score</h3>
+                            <div className="flex items-baseline space-x-2 mt-1">
+                                <span className="text-3xl font-bold text-brand">{product.userScore}</span>
+                                <span className="text-sm text-muted">/ 5.0</span>
+                            </div>
+                            <div className="text-xs text-muted mt-1">Gebaseerd op jouw beoordeling</div>
+                        </>
+                    ) : (
+                        <>
+                            <h3 className="font-semibold text-text">Vivino Score</h3>
+                            <div className="flex items-baseline space-x-2 mt-1">
+                                <span className="text-3xl font-bold text-brand">{product.vivino?.score}</span>
+                                <span className="text-sm text-muted">/ 5.0</span>
+                            </div>
+                            <div className="text-xs text-muted mt-1">{product.vivino?.reviews} beoordelingen</div>
+                        </>
+                    )}
                 </div>
-                {product.vivino.url && (
+                {product.vivino?.url && !product.userScore && (
                     <Link href={product.vivino.url} target="_blank" className="text-brand text-xs font-medium flex items-center bg-brand-soft px-2 py-1 rounded-full">
                         Bekijk op Vivino <ExternalLink className="w-3 h-3 ml-1" />
                     </Link>
                 )}
             </div>
 
-            {product.vivino.top_reviews && product.vivino.top_reviews.length > 0 && (
+            {/* Show Top Reviews if available (and not overridden by user review UI below) */}
+            {product.vivino?.top_reviews && product.vivino.top_reviews.length > 0 && !product.userScore && (
                 <div className="space-y-3 pt-3 border-t border-divider border-dashed relative z-10">
                     <h4 className="text-xs font-semibold text-muted uppercase tracking-wider">Top Reviews</h4>
                     {product.vivino.top_reviews.map((review, idx) => (
