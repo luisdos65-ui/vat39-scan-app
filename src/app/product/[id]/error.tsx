@@ -48,8 +48,9 @@ export default function Error({
         </button>
       </div>
 
-      <div className="text-[10px] text-muted font-mono mt-8">
-        Error ID: {error.digest || 'Unknown'}
+      <div className="text-[10px] text-muted font-mono mt-8 max-w-full overflow-hidden text-ellipsis px-4">
+        <p>Error: {error.message}</p>
+        <p>Digest: {error.digest || 'Unknown'}</p>
       </div>
     </div>
   );

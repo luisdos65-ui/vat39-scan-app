@@ -68,4 +68,5 @@ export interface Product {
   userScore?: number;
   userReview?: string;
   scannedAt: Date;
+  scanMethod?: 'OCR' | 'MANUAL';
 }

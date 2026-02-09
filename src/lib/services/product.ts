@@ -42,7 +42,8 @@ export async function processTextSearch(query: string): Promise<Product> {
     productionMethod: production,
     verificationStatus,
     citations: producer.citations || [],
-    scannedAt: new Date()
+    scannedAt: new Date(),
+    scanMethod: 'MANUAL'
   };
 }
 
@@ -102,6 +103,7 @@ export async function processScan(imageFile: File): Promise<Product> {
     productionMethod: production,
     verificationStatus,
     citations: producer.citations || [],
-    scannedAt: new Date()
+    scannedAt: new Date(),
+    scanMethod: 'OCR'
   };
 }

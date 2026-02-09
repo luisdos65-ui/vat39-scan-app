@@ -14,6 +14,15 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { clsx } from 'clsx';
 import { MOCK_GLENFIDDICH, DISCOVER_PRODUCTS } from '@/lib/data/mocks';
 
+const getScanMethodBadge = (method?: string) => {
+  if (!method) return null;
+  return (
+    <div className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-[10px] font-bold border border-gray-200 uppercase">
+      {method}
+    </div>
+  );
+};
+
 export default function ProductPage() {
   const router = useRouter();
   const params = useParams();
