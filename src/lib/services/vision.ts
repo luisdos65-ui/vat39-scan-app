@@ -7,10 +7,21 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
   console.log('Processing image with Tesseract:', imageFile.name);
 
   try {
-    // Check if Tesseract is loaded from CDN
-    const Tesseract = (window as any).Tesseract;
+    // Check if Tesseract is loaded from CDN, with retry mechanism
+    let Tesseract = (window as any).Tesseract;
+    
     if (!Tesseract) {
-        throw new Error("Tesseract library not loaded");
+        console.log("Tesseract not ready, waiting...");
+        // Poll for up to 3 seconds
+        for (let i = 0; i < 30; i++) {
+            await new Promise(r => setTimeout(r, 100));
+            Tesseract = (window as any).Tesseract;
+            if (Tesseract) break;
+        }
+    }
+
+    if (!Tesseract) {
+        throw new Error("Tesseract library could not be loaded. Please check your internet connection.");
     }
 
     // Timeout race to prevent hanging forever
