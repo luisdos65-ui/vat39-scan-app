@@ -12,7 +12,14 @@ export async function processScan(imageFile: File): Promise<Product> {
     findVivinoData(scannedData)
   ]);
 
-  // 3. Construct Product object
+  // 3. Convert image to Base64 for persistent local storage
+  const base64Image = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.readAsDataURL(imageFile);
+  });
+
+  // 4. Construct Product object
   return {
     id: crypto.randomUUID(),
     name: `${scannedData.brand} ${scannedData.productName}`,
@@ -21,7 +28,7 @@ export async function processScan(imageFile: File): Promise<Product> {
     abv: scannedData.abv,
     volume: scannedData.volume,
     vintage: scannedData.vintage,
-    image: URL.createObjectURL(imageFile), // Temporary blob URL for display
+    image: base64Image, // Persistent Data URL
     producer,
     vivino,
     scannedAt: new Date()

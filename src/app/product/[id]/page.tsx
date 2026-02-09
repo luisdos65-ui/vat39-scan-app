@@ -102,7 +102,7 @@ export default function ProductPage() {
             className="w-32 h-48 bg-white rounded-lg shadow-md flex items-center justify-center p-2 relative overflow-hidden"
         >
              {/* Image Placeholder */}
-             {product.image && (product.image.startsWith('blob:') || product.image.startsWith('http')) ? (
+             {product.image && (product.image.startsWith('data:') || product.image.startsWith('http')) ? (
                 <div className="relative w-full h-full">
                     <Image 
                         src={product.image} 
