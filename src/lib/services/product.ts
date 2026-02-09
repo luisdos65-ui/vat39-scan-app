@@ -104,6 +104,4 @@ export async function processScan(imageFile: File): Promise<Product> {
     citations: producer.citations || [],
     scannedAt: new Date()
   };
-    scannedAt: new Date()
-  };
 }
