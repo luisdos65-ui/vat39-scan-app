@@ -107,7 +107,18 @@ export default function ScanPage() {
         router.push(`/product/${product.id}`);
       } catch (error) {
         console.error('Scan failed:', error);
-        addLog(`ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        
+        let errorMessage = 'Er is iets misgegaan tijdens het scannen.';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+            // Check for specific Google AI errors that might be swallowed
+            if (errorMessage.includes("500")) errorMessage = "Server fout (controleer API Key).";
+        }
+        
+        // Show Visible Alert
+        alert(`Scan Fout: ${errorMessage}\n\nProbeer het opnieuw of zoek handmatig.`);
+
+        addLog(`ERROR: ${errorMessage}`);
         setIsProcessing(false);
       }
   };

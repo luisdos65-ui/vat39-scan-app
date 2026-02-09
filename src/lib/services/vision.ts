@@ -48,7 +48,9 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
               };
           }
       } else {
-          console.warn("Google AI not available or failed, falling back to Tesseract OCR.");
+          const errorText = await response.text();
+          console.warn("Google AI failed:", response.status, errorText);
+          // If 500/400, it might be the key. Log it clearly.
       }
   } catch (e) {
       console.error("Google AI Error:", e);
