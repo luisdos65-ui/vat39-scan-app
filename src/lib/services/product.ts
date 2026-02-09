@@ -1,5 +1,5 @@
 import { Product, ScannedData } from '@/types';
-import { findProducerInfo, findVivinoData, findVat39Recommendation, findProductionMethod } from './search';
+import { findProducerInfo, findVat39Recommendation, findProductionMethod } from './search';
 import { extractDataFromImage } from './vision';
 import { DISCOVER_PRODUCTS, MOCK_GLENFIDDICH } from '@/lib/data/mocks';
 import { compressImage } from '@/lib/utils';
@@ -95,7 +95,6 @@ export async function processScan(imageFile: File): Promise<Product> {
     vintage: scannedData.vintage,
     image: base64Image, // Persistent Data URL
     producer,
-    vivino,
     vat39Recommendation: vat39Rec,
     productionMethod: production,
     verificationStatus,
