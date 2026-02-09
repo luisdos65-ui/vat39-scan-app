@@ -3,7 +3,7 @@
 // Force dynamic rendering to avoid static generation of this route
 export const dynamic = 'force-dynamic';
 
-import { Star, Globe, MapPin, ChevronLeft, Share2, ExternalLink, Heart } from 'lucide-react';
+import { Star, Globe, MapPin, ChevronLeft, Share2, ExternalLink, Heart, Award, FlaskConical, Quote } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image'; // Use Next.js Image component
 import Link from 'next/link';
@@ -187,6 +187,45 @@ export default function ProductPage() {
                     Zoek op Vivino <ExternalLink className="w-4 h-4" />
                 </Link>
             )}
+        </motion.div>
+      )}
+
+      {/* Production Method Card */}
+      {product.productionMethod && (
+        <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.15 }}
+            className="bg-white rounded-[16px] p-5 shadow-sm border border-divider space-y-3"
+        >
+            <h3 className="font-semibold text-text flex items-center gap-2">
+                <FlaskConical className="w-5 h-5 text-brand" />
+                Hoe het gemaakt wordt
+            </h3>
+            <p className="text-sm text-muted leading-relaxed">
+                {product.productionMethod}
+            </p>
+        </motion.div>
+      )}
+
+      {/* Vat39 Expert Card */}
+      {product.vat39Recommendation && (
+        <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="bg-gradient-to-br from-brand/5 to-transparent rounded-[16px] p-5 shadow-sm border border-brand/10 space-y-3"
+        >
+            <h3 className="font-semibold text-brand flex items-center gap-2">
+                <Award className="w-5 h-5" />
+                Vat39 De Specialist
+            </h3>
+            <div className="flex gap-3">
+                <Quote className="w-8 h-8 text-brand/20 shrink-0 transform rotate-180" />
+                <p className="text-sm text-text italic leading-relaxed">
+                    {product.vat39Recommendation}
+                </p>
+            </div>
         </motion.div>
       )}
 

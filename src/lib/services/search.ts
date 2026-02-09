@@ -51,3 +51,39 @@ export async function findVivinoData(scannedData: ScannedData) {
     };
 }
 
+export async function findVat39Recommendation(scannedData: ScannedData): Promise<string> {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    const brand = scannedData.brand?.toLowerCase() || '';
+    
+    if (brand.includes('glenfiddich')) {
+        return "De 12 jaar oude Glenfiddich is het schoolvoorbeeld van een Speyside single malt. Vat39 adviseert deze fles vanwege zijn constante kwaliteit en toegankelijke karakter met tonen van peer en eik.";
+    }
+
+    if (brand.includes('chateau') || brand.includes('domaine')) {
+        return "Een klassieke Franse wijn die perfect past in ons assortiment van traditionele wijnhuizen. Geselecteerd door onze specialisten vanwege de uitstekende prijs-kwaliteitverhouding.";
+    }
+
+    return "Geselecteerd door Vat39 De Specialist vanwege het unieke karakter en de authentieke productiemethode. Een aanwinst voor elke liefhebber.";
+}
+
+export async function findProductionMethod(scannedData: ScannedData): Promise<string> {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    const text = scannedData.rawText.toLowerCase();
+    
+    if (text.includes('whisky') || text.includes('malt')) {
+        return "Gedistilleerd in koperen pot stills en jarenlang gerijpt op eikenhouten vaten voor een rijke, complexe smaakontwikkeling.";
+    }
+
+    if (text.includes('red') || text.includes('rouge') || text.includes('rosso')) {
+        return "Gemaakt van zorgvuldig geselecteerde druiven, met een traditionele vergisting op de schillen om kleur en tannines te extraheren.";
+    }
+
+    if (text.includes('white') || text.includes('blanc') || text.includes('bianco')) {
+        return "Geproduceerd via koude vergisting op roestvrijstalen tanks om de frisse fruitaroma's optimaal te behouden.";
+    }
+
+    return "Ambachtelijk geproduceerd volgens traditionele methoden, waarbij kwaliteit en vakmanschap centraal staan in elke stap van het proces.";
+}
+

@@ -1,5 +1,5 @@
 import { Product, ScannedData } from '@/types';
-import { findProducerInfo, findVivinoData } from './search';
+import { findProducerInfo, findVivinoData, findVat39Recommendation, findProductionMethod } from './search';
 import { extractDataFromImage } from './vision';
 import { DISCOVER_PRODUCTS, MOCK_GLENFIDDICH } from '@/lib/data/mocks';
 
@@ -43,10 +43,12 @@ export async function processScan(imageFile: File): Promise<Product> {
     };
   }
 
-  // 2. Parallel fetch for Enrichment (Producer info + Vivino)
-  const [producer, vivino] = await Promise.all([
+  // 2. Parallel fetch for Enrichment (Producer info + Vivino + Vat39 + Production)
+  const [producer, vivino, vat39Rec, production] = await Promise.all([
     findProducerInfo(scannedData),
-    findVivinoData(scannedData)
+    findVivinoData(scannedData),
+    findVat39Recommendation(scannedData),
+    findProductionMethod(scannedData)
   ]);
 
   // 3. Convert image to Base64 for persistent local storage
@@ -68,6 +70,8 @@ export async function processScan(imageFile: File): Promise<Product> {
     image: base64Image, // Persistent Data URL
     producer,
     vivino,
+    vat39Recommendation: vat39Rec,
+    productionMethod: production,
     scannedAt: new Date()
   };
 }

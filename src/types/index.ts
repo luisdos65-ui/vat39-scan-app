@@ -35,6 +35,8 @@ export interface Product {
   image?: string;
   producer?: Producer;
   vivino?: VivinoData;
+  vat39Recommendation?: string; // Why Vat39 offers this
+  productionMethod?: string;    // How it is made
   userScore?: number;
   userReview?: string;
   scannedAt: Date;
