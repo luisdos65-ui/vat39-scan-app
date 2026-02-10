@@ -39,20 +39,31 @@ export async function POST(req: NextRequest) {
         const dataUrl = `data:${file.type || 'image/jpeg'};base64,${base64Image}`;
 
         const prompt = `
-            Analyze this wine or spirit label image strictly and return a JSON object.
-            Do not invent information. If a field is not visible, use null.
+            You are the expert AI Sommelier for Vat39 (a premium liquor store).
+            Analyze this image of a bottle/label. Identify the product accurately.
             
-            Extract the following:
-            - brand: The main brand name (e.g. "Glenfiddich", "Chateau Margaux")
-            - productName: The specific product name (e.g. "12 Year Old", "Grand Vin")
-            - type: "Wijn", "Whisky", "Gin", "Rum", "Vodka", or "Overig"
-            - vintage: Year (e.g. "2018")
-            - abv: Alcohol percentage (e.g. "40%")
-            - volume: Bottle size (e.g. "70cl", "750ml")
-            - producer: Full producer name if different from brand
-            - region: Region or Country of origin (e.g. "Speyside, Scotland", "Bordeaux, France")
+            Return a JSON object with this EXACT structure (no markdown):
+            {
+                "brand": "Brand Name (e.g. Glenfiddich)",
+                "productName": "Specific Product (e.g. 12 Year Old)",
+                "type": "Wijn/Whisky/Gin/etc",
+                "vintage": "Year (if applicable)",
+                "abv": "Alcohol %",
+                "volume": "70cl/750ml",
+                "description": "A short, engaging description of this product (in Dutch!). Why is it special?",
+                "tastingNotes": ["Note 1", "Note 2", "Note 3"],
+                "foodPairing": ["Dish 1", "Dish 2"],
+                "vat39Tip": "A professional serving tip or buying advice (in Dutch).",
+                "productionMethod": "Briefly explain how it is made (in Dutch).",
+                "producer": {
+                    "name": "Producer Name",
+                    "region": "Region, Country",
+                    "about": "Short info about the producer (in Dutch)."
+                }
+            }
             
-            Return ONLY the raw JSON string, no markdown formatting.
+            Language: DUTCH (for description, tips, notes).
+            If you are not 100% sure of the exact bottle, give your best expert guess based on the visual cues.
         `;
 
         console.log("Calling OpenAI API (gpt-4o-mini)...");

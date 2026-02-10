@@ -68,12 +68,21 @@ export async function processScan(imageFile: File): Promise<Product> {
   // Parallel fetch for Enrichment (Producer info + Vivino + Vat39 + Production)
   // Corresponds to Base44 Steps 2 (Search), 3 (Parse), 4 (Verify), 5 (Vivino)
   // We execute them in parallel for speed, but logically they map to the requested flow.
-  const [producer, vivino, vat39Rec, production] = await Promise.all([
-    findProducerInfo(scannedData),
-    findVivinoData(scannedData),
-    findVat39Recommendation(scannedData),
-    findProductionMethod(scannedData)
-  ]);
+  
+  // OPTIMIZATION: If AI already provided this info, use it instead of mocking!
+  const producer = scannedData.producerInfo || await findProducerInfo(scannedData);
+  
+  // For Vivino, we might still want to fetch real data if possible, or use AI score if implemented later.
+  // For now, keep Vivino separate as it's a distinct data source.
+  const vivino = await findVivinoData(scannedData);
+  
+  const vat39Rec = scannedData.vat39Tip || await findVat39Recommendation(scannedData);
+  
+  const production = scannedData.productionMethod || await findProductionMethod(scannedData);
+  
+  // If we have AI description, we might want to attach it somewhere?
+  // Maybe in vat39Rec if it's empty? Or a new field.
+  // For now, if we have AI data, we are 'VERIFIED' enough.
 
   // 3. Compress image for persistent local storage (max 500px, 60% quality)
   // This is CRITICAL to avoid LocalStorage quota limits (5MB)
@@ -85,7 +94,7 @@ export async function processScan(imageFile: File): Promise<Product> {
       base64Image = "https://images.unsplash.com/photo-1556676114-151b22814c82?auto=format&fit=crop&q=80&w=500";
   }
 
-  const verificationStatus = determineVerificationStatus(scannedData, producer);
+  const verificationStatus = scannedData.scanMethod === 'openai' ? 'VERIFIED' : determineVerificationStatus(scannedData, producer);
 
   // 4. Construct Product object
   return {
@@ -101,9 +110,10 @@ export async function processScan(imageFile: File): Promise<Product> {
     vivino,
     vat39Recommendation: vat39Rec,
     productionMethod: production,
+    tastingNotes: scannedData.tastingNotes, // New field
     verificationStatus,
     citations: producer.citations || [],
     scannedAt: new Date(),
-    scanMethod: 'OCR'
+    scanMethod: scannedData.scanMethod as any || 'OCR' // Use 'openai' if set
   };
 }

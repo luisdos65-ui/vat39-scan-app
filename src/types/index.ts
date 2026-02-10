@@ -12,6 +12,14 @@ export interface ScannedData {
   volume?: string;
   vintage?: string;
   confidence: 'high' | 'medium' | 'low';
+  scanMethod?: string;
+  // AI Enhanced Fields
+  description?: string;
+  tastingNotes?: string[];
+  foodPairing?: string[];
+  vat39Tip?: string;
+  productionMethod?: string;
+  producerInfo?: Producer;
 }
 
 export interface Producer {

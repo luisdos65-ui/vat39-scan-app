@@ -43,6 +43,22 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
                   abv: data.abv ? `${data.abv}` : undefined,
                   volume: data.volume ? `${data.volume}` : undefined,
                   vintage: data.vintage ? `${data.vintage}` : undefined,
+                  
+                  // New AI Fields
+                  description: data.description,
+                  tastingNotes: data.tastingNotes,
+                  foodPairing: data.foodPairing,
+                  vat39Tip: data.vat39Tip,
+                  productionMethod: data.productionMethod,
+                  producerInfo: data.producer ? {
+                      name: data.producer.name || data.brand,
+                      type: "Producent",
+                      region: data.producer.region,
+                      about: data.producer.about,
+                      country: data.producer.region?.split(',').pop()?.trim(),
+                      citations: []
+                  } : undefined,
+
                   confidence: 'high',
                   scanMethod: 'openai'
               };
