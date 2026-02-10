@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 import { Search, Globe, FileText, CheckCircle, Sparkles } from 'lucide-react';
 
 const steps = [
-  { id: 'ocr', label: 'Google AI Analyse...', icon: Sparkles },
-  { id: 'search', label: 'Producent zoeken...', icon: Search },
-  { id: 'parse', label: 'Website analyseren...', icon: Globe },
-  { id: 'verify', label: 'Verifiëren...', icon: CheckCircle },
+  { id: 'ocr', label: 'Vat39 AI Sommelier Analyse...', icon: Sparkles },
+  { id: 'search', label: 'Wijn/Drank Herkennen...', icon: Search },
+  { id: 'parse', label: 'Gegevens Ophalen...', icon: Globe },
+  { id: 'verify', label: 'Expert Tips Genereren...', icon: CheckCircle },
 ];
 
 interface ProcessingOverlayProps {
