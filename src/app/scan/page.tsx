@@ -10,6 +10,7 @@ import CameraCapture from '@/components/CameraCapture';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import ProcessingOverlay from '@/components/ProcessingOverlay';
 import { Button } from '@/components/ui/button';
+import { Html5Qrcode } from 'html5-qrcode';
 
 export default function ScanPage() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -109,59 +110,28 @@ export default function ScanPage() {
       addLog(`Start scan: ${file.name} (${(file.size / 1024).toFixed(0)}KB)`);
       
       try {
-        addLog("Processing image...");
-        // Step 1: OCR
-        setProcessingStep('ocr');
-        const product = await processScan(file);
-        
-        // Simulate other steps for better UX since processScan does it all in parallel now
-        // In a real LLM flow these would be distinct await calls
-        setProcessingStep('search');
-        await new Promise(r => setTimeout(r, 800));
-        
-        setProcessingStep('parse');
-        await new Promise(r => setTimeout(r, 800));
-
-        setProcessingStep('verify');
-        await new Promise(r => setTimeout(r, 600));
-
-        addLog(`Scan success: ${product.name}`);
-        
-        // Save to local history
+        addLog("Scanning for barcode in image...");
+        // NEW: Try client-side barcode scan first
+        const html5QrCode = new Html5Qrcode("reader-hidden");
         try {
-            const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
-            try {
-                localStorage.setItem('recentScans', JSON.stringify([product, ...recentScans].slice(0, 10)));
-            } catch (quotaError) {
-                console.warn("Storage quota exceeded, clearing old scans to make space.");
-                // Try saving only the new product
-                localStorage.setItem('recentScans', JSON.stringify([product]));
-            }
-        } catch (storageError) {
-             addLog("Storage Warning: Could not save history");
-             console.error(storageError);
-             // Even if storage fails, we should try to persist this one item for the next page
-             try {
-                sessionStorage.setItem('currentProduct', JSON.stringify(product));
-             } catch(e) {}
+            const barcode = await html5QrCode.scanFile(file, false);
+            addLog(`Barcode found in image: ${barcode}`);
+            html5QrCode.clear();
+            handleBarcodeScan(barcode);
+            return;
+        } catch (err) {
+            console.log("No barcode found in image, fallback to AI?", err);
+            html5QrCode.clear();
+            
+            setIsProcessing(false);
+            alert("Geen streepjescode gevonden in de foto.\n\nZorg dat de streepjescode goed zichtbaar en scherp is.");
+            return;
         }
 
-        router.push(`/product/${product.id}`);
       } catch (error) {
         console.error('Scan failed:', error);
-        
-        let errorMessage = 'Er is iets misgegaan tijdens het scannen.';
-        if (error instanceof Error) {
-            errorMessage = error.message;
-            // Check for specific Google AI errors that might be swallowed
-            if (errorMessage.includes("500")) errorMessage = "Server fout (controleer API Key).";
-        }
-        
-        // Show Visible Alert
-        alert(`Scan Fout: ${errorMessage}\n\nProbeer het opnieuw of zoek handmatig.`);
-
-        addLog(`ERROR: ${errorMessage}`);
         setIsProcessing(false);
+        alert("Fout bij verwerken foto.");
       }
   };
 
@@ -182,6 +152,9 @@ export default function ScanPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[75vh] space-y-8 pt-8">
       <ProcessingOverlay currentStep={processingStep} isVisible={isProcessing} imagePreview={currentImage} />
+      
+      {/* Hidden div for file scanner */}
+      <div id="reader-hidden" className="hidden"></div>
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
