@@ -68,5 +68,5 @@ export interface Product {
   userScore?: number;
   userReview?: string;
   scannedAt: Date;
-  scanMethod?: 'OCR' | 'MANUAL';
+  scanMethod?: 'OCR' | 'MANUAL' | 'BARCODE' | 'openai' | 'google-ai';
 }
