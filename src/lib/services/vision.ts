@@ -50,7 +50,14 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
       } else {
           const errorText = await response.text();
           console.warn("Google AI failed:", response.status, errorText);
-          // If 500/400, it might be the key. Log it clearly.
+          
+          // Propagate configuration error explicitly to UI if possible, or log critical warning
+          if (response.status === 500 && errorText.includes("GEMINI_API_KEY")) {
+              console.error("CRITICAL: GEMINI_API_KEY is missing in server environment!");
+              // We could throw here to stop fallback if we want to force config fix, 
+              // but for end-users, fallback to OCR is better than crash.
+              // Just ensure we don't silence this specific error in logs.
+          }
       }
   } catch (e) {
       console.error("Google AI Error:", e);
