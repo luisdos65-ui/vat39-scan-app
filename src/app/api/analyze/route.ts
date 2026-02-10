@@ -36,45 +36,47 @@ export async function POST(req: NextRequest) {
         const base64Image = buffer.toString('base64');
 
         // Use Gemini 1.5 Flash for speed and multimodal capabilities
-        // NOTE: 'gemini-pro-vision' also resulted in 404 in some contexts.
-        // It seems v1beta requires specific models.
-        // Let's try the absolute most standard model identifier that should work.
-        // If this fails, we might need to check the API key permissions or project region.
-        console.log("Calling Gemini API (model: gemini-1.5-flash)...");
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // We will try multiple model names to be robust against region/version availability.
+        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro-vision"];
+        
+        let result = null;
+        let lastError = null;
 
-        const prompt = `
-            Analyze this wine or spirit label image strictly and return a JSON object.
-            Do not invent information. If a field is not visible, use null.
-            
-            Extract the following:
-            - brand: The main brand name (e.g. "Glenfiddich", "Chateau Margaux")
-            - productName: The specific product name (e.g. "12 Year Old", "Grand Vin")
-            - type: "Wijn", "Whisky", "Gin", "Rum", "Vodka", or "Overig"
-            - vintage: Year (e.g. "2018")
-            - abv: Alcohol percentage (e.g. "40%")
-            - volume: Bottle size (e.g. "70cl", "750ml")
-            - producer: Full producer name if different from brand
-            - region: Region or Country of origin (e.g. "Speyside, Scotland", "Bordeaux, France")
-            
-            Return ONLY the raw JSON string, no markdown formatting.
-        `;
+        console.log("Calling Gemini API with fallback strategy...");
 
-        try {
-            const result = await model.generateContent([
-                prompt,
-                {
-                    inlineData: {
-                        data: base64Image,
-                        mimeType: file.type || 'image/jpeg'
+        for (const modelName of modelsToTry) {
+            try {
+                console.log(`Attempting model: ${modelName}`);
+                const model = genAI.getGenerativeModel({ model: modelName });
+                
+                result = await model.generateContent([
+                    prompt,
+                    {
+                        inlineData: {
+                            data: base64Image,
+                            mimeType: file.type || 'image/jpeg'
+                        }
                     }
-                }
-            ]);
+                ]);
+                
+                // If we get here, it worked!
+                console.log(`Success with model: ${modelName}`);
+                break; 
+            } catch (e: any) {
+                console.warn(`Failed with model ${modelName}:`, e.message);
+                lastError = e;
+                // Continue to next model
+            }
+        }
 
-            const responseText = result.response.text();
-            console.log("Gemini Response Raw:", responseText.substring(0, 100) + "...");
-            
-            // Clean markdown code blocks if present
+        if (!result && lastError) {
+             throw lastError;
+        }
+
+        const responseText = result.response.text();
+        console.log("Gemini Response Raw:", responseText.substring(0, 100) + "...");
+        
+        // Clean markdown code blocks if present
             const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
             
             try {
