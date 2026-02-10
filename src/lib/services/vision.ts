@@ -62,25 +62,26 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
                   confidence: 'high',
                   scanMethod: 'openai'
               };
+          } else {
+              throw new Error("AI kon het product niet identificeren.");
           }
       } else {
           const errorText = await response.text();
           console.warn("AI analysis failed:", response.status, errorText);
           
-          // Propagate configuration error explicitly to UI if possible, or log critical warning
+          // Propagate configuration error explicitly
           if (response.status === 500 && errorText.includes("OPENAI_API_KEY")) {
-              console.error("CRITICAL: OPENAI_API_KEY is missing in server environment!");
-              // We could throw here to stop fallback if we want to force config fix, 
-              // but for end-users, fallback to OCR is better than crash.
-              // Just ensure we don't silence this specific error in logs.
+              throw new Error("CRITICAL: OPENAI_API_KEY ontbreekt op Vercel! Voeg deze toe bij Settings > Environment Variables.");
+          } else if (response.status === 500) {
+              throw new Error("Server Fout (500). Controleer Vercel Logs.");
           }
+          
+          throw new Error(`AI Request mislukt: ${response.status} ${response.statusText}`);
       }
   } catch (e) {
       console.error("AI Analysis Error:", e);
-      // STOP! Do not fall back to Tesseract if AI fails.
-      // User explicitly requested to use AI (ChatGPT).
-      // Fallback causes bad user experience ("Onbekend Merk").
-      throw new Error("AI Analyse mislukt (Server/API fout). Controleer internet en configuratie.");
+      // Re-throw the specific error so it reaches the UI
+      throw e;
   }
 
   // UNREACHABLE CODE (Tesseract Fallback Removed)

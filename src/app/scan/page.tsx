@@ -121,19 +121,16 @@ export default function ScanPage() {
           try {
              const product = await processScan(file);
              
-             // Check if it fell back to OCR and produced bad results
-             if (product.scanMethod === 'OCR' && product.brand === 'Onbekend Merk') {
-                 // Throwing here allows the UI to show a specific "AI Failed" alert instead of a bad product
-                 // But only if barcode also failed.
-                 // We'll return it, but log a warning.
-                 addLog("AI Failed, using local fallback.");
+             // Check if it fell back to OCR and produced bad results (SHOULD NOT HAPPEN ANYMORE)
+             if (product.scanMethod === 'OCR') {
+                 addLog("Warning: Unexpected OCR fallback.");
              }
              
-             if (isBarcodeFound) return null; // Barcode already won
-             return product;
+             if (isBarcodeFound) return { cancelled: true }; // Barcode already won
+             return { product };
           } catch (e) {
              console.error("AI Error:", e);
-             return null;
+             return { error: e };
           }
       })();
 
@@ -177,9 +174,10 @@ export default function ScanPage() {
         addLog("No barcode found. Waiting for AI...");
         
         // If barcode didn't find anything, we rely on AI
-        const aiProduct = await aiPromise;
+        const aiResult = await aiPromise;
         
-        if (aiProduct) {
+        if (aiResult.product) {
+            const aiProduct = aiResult.product;
             // Simulate steps for UX (if it was too fast, which is rare for GPT-4o)
             setProcessingStep('search');
             await new Promise(r => setTimeout(r, 500));
@@ -189,6 +187,10 @@ export default function ScanPage() {
             addLog(`AI Success: ${aiProduct.name}`);
             saveToHistory(aiProduct);
             router.push(`/product/${aiProduct.id}`);
+        } else if (aiResult.error) {
+            throw aiResult.error; // Throw the REAL error from AI
+        } else if (aiResult.cancelled) {
+             return; // Barcode won
         } else {
             throw new Error("Geen resultaat van AI of Barcode.");
         }
@@ -201,9 +203,15 @@ export default function ScanPage() {
             if (errorMessage.includes("500")) errorMessage = "Server fout (Controleer API Key).";
         }
         
-        setIsProcessing(false);
-        alert(`Helaas, we konden dit niet herkennen.\n\nFout: ${errorMessage}`);
+        // Custom message if we think it's just "not found" vs "error"
+        if (errorMessage.includes("Geen resultaat")) {
+             alert(`Helaas, we konden dit product niet herkennen.\n\nTip: Zorg voor een scherpe foto van het etiket.`);
+        } else {
+             alert(`Er ging iets mis:\n${errorMessage}`);
+        }
+
         addLog(`ERROR: ${errorMessage}`);
+        setIsProcessing(false);
       }
   };
 
