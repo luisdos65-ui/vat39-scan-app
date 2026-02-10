@@ -50,9 +50,9 @@ export default function CameraCapture({ onCapture, isProcessing, onBarcodeScan }
               <Camera className="w-10 h-10" />
             </div>
             <div>
-              <h2 className="text-xl font-bold tracking-tight">Maak foto van streepjescode</h2>
+              <h2 className="text-xl font-bold tracking-tight">Maak foto van de fles</h2>
               <p className="text-white/80 text-sm mt-1 font-medium">
-                Tik hier om camera te openen
+                Onze AI herkent het direct
               </p>
             </div>
           </div>
