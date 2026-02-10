@@ -20,67 +20,80 @@ export default function BarcodeScanner({ onScanSuccess, onScanFailure, onClose }
   useEffect(() => {
     mountedRef.current = true;
 
-    const startScanner = async () => {
-      try {
-        const devices = await Html5Qrcode.getCameras();
-        if (devices && devices.length) {
-            const cameraId = devices[0].id;
-            
-            // Create instance
-            const html5QrCode = new Html5Qrcode("reader");
-            scannerRef.current = html5QrCode;
+    // Wait for the DOM element to be available
+    const initScanner = async () => {
+        // Prevent double init
+        if (scannerRef.current) return;
 
-            // Increase scanning frequency for faster detection
-            await html5QrCode.start(
-                { facingMode: "environment" }, 
-                {
-                    fps: 20, // Increased FPS for faster scanning
-                    qrbox: { width: 300, height: 200 }, // Wider box for barcodes
-                    aspectRatio: 1.0,
-                    formatsToSupport: [
-                        Html5QrcodeSupportedFormats.EAN_13,
-                        Html5QrcodeSupportedFormats.EAN_8,
-                        Html5QrcodeSupportedFormats.UPC_A,
-                        Html5QrcodeSupportedFormats.UPC_E,
-                        Html5QrcodeSupportedFormats.CODE_128,
-                        Html5QrcodeSupportedFormats.CODE_39
-                    ]
-                },
-                (decodedText) => {
-                    // Success - Stop IMMEDIATELY
-                    if (mountedRef.current) {
-                        html5QrCode.stop().then(() => {
-                            onScanSuccess(decodedText);
-                        }).catch(console.error);
+        try {
+            // Check permissions explicitly first? 
+            // Html5Qrcode.getCameras() does this.
+            const devices = await Html5Qrcode.getCameras();
+            
+            if (!mountedRef.current) return;
+
+            if (devices && devices.length) {
+                // Use "reader" ID which must exist in DOM
+                const html5QrCode = new Html5Qrcode("reader");
+                scannerRef.current = html5QrCode;
+
+                await html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    {
+                        fps: 30, // MAX FPS for instant capture
+                        qrbox: { width: 280, height: 180 }, // Optimal for standard barcodes
+                        aspectRatio: 1.0,
+                        disableFlip: false,
+                        formatsToSupport: [
+                            Html5QrcodeSupportedFormats.EAN_13,
+                            Html5QrcodeSupportedFormats.EAN_8,
+                            Html5QrcodeSupportedFormats.UPC_A,
+                            Html5QrcodeSupportedFormats.UPC_E,
+                            Html5QrcodeSupportedFormats.CODE_128,
+                            Html5QrcodeSupportedFormats.CODE_39
+                        ]
+                    },
+                    (decodedText) => {
+                        // Success - Stop IMMEDIATELY
+                         if (scannerRef.current?.isScanning) {
+                            scannerRef.current.stop().then(() => {
+                                if (mountedRef.current) {
+                                    onScanSuccess(decodedText);
+                                }
+                            }).catch(err => console.warn("Failed to stop scanner", err));
+                        }
+                    },
+                    (errorMessage) => {
+                        // Ignore frame errors
                     }
-                },
-                (errorMessage) => {
-                    // Ignore scan errors as they happen every frame no code is detected
-                }
-            );
-            setIsLoading(false);
-        } else {
-            setError("Geen camera gevonden.");
-            setIsLoading(false);
+                );
+                
+                if (mountedRef.current) setIsLoading(false);
+            } else {
+                throw new Error("Geen camera gevonden");
+            }
+        } catch (err: any) {
+            console.error("Scanner Init Error:", err);
+            if (mountedRef.current) {
+                setError(err.message || "Camera start mislukt");
+                setIsLoading(false);
+            }
         }
-      } catch (err) {
-        console.error("Camera start failed", err);
-        setError("Toegang tot camera geweigerd of niet beschikbaar.");
-        setIsLoading(false);
-      }
     };
 
-    // Small timeout to ensure DOM is ready
-    const timer = setTimeout(() => {
-        startScanner();
-    }, 100);
+    // Ensure DOM is painted
+    const timer = setTimeout(initScanner, 300);
 
     return () => {
-      mountedRef.current = false;
-      clearTimeout(timer);
-      if (scannerRef.current && scannerRef.current.isScanning) {
-          scannerRef.current.stop().catch(console.error);
-      }
+        mountedRef.current = false;
+        clearTimeout(timer);
+        if (scannerRef.current) {
+            if (scannerRef.current.isScanning) {
+                scannerRef.current.stop().catch(console.error);
+            }
+            scannerRef.current.clear().catch(console.error);
+            scannerRef.current = null;
+        }
     };
   }, [onScanSuccess]);
 
@@ -99,23 +112,38 @@ export default function BarcodeScanner({ onScanSuccess, onScanFailure, onClose }
             </div>
             
             <div className="flex-1 flex flex-col justify-center p-4 relative">
+                {/* Loader Overlay */}
                 {isLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                        <Loader2 className="w-10 h-10 text-brand animate-spin" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/50 backdrop-blur-sm">
+                        <Loader2 className="w-12 h-12 text-brand animate-spin mb-4" />
+                        <p className="text-white font-medium">Camera starten...</p>
                     </div>
                 )}
                 
-                {error ? (
-                    <div className="text-white text-center p-4 bg-red-500/20 rounded-xl border border-red-500/50">
-                        <p className="font-medium">{error}</p>
-                        <p className="text-sm opacity-80 mt-2">Controleer je browser instellingen.</p>
+                {/* Error State */}
+                {error && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-30 p-8 bg-black">
+                        <div className="text-red-500 mb-4 bg-red-500/10 p-4 rounded-full">
+                            <X className="w-10 h-10" />
+                        </div>
+                        <p className="text-white font-bold text-lg mb-2">{error}</p>
+                        <p className="text-white/60 text-center text-sm mb-6">
+                            Controleer of je browser toegang heeft tot de camera.
+                        </p>
+                        <Button onClick={onClose} variant="outline" className="border-white/20 text-white">
+                            Sluiten
+                        </Button>
                     </div>
-                ) : (
-                    <div id="reader" className="w-full overflow-hidden rounded-xl border-2 border-white/20 bg-black min-h-[300px]"></div>
                 )}
 
-                <p className="text-white/70 text-center mt-4 text-sm">
-                    Richt de camera op de streepjescode
+                {/* Scanner Container - Always render this div! */}
+                <div 
+                    id="reader" 
+                    className="w-full overflow-hidden rounded-xl border-2 border-white/20 bg-black min-h-[350px]"
+                ></div>
+
+                <p className="text-white/70 text-center mt-6 text-sm font-medium animate-pulse">
+                    Richt op de streepjescode
                 </p>
             </div>
         </div>
