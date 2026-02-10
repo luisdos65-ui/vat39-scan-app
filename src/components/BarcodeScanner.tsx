@@ -30,21 +30,24 @@ export default function BarcodeScanner({ onScanSuccess, onScanFailure, onClose }
             const html5QrCode = new Html5Qrcode("reader");
             scannerRef.current = html5QrCode;
 
+            // Increase scanning frequency for faster detection
             await html5QrCode.start(
                 { facingMode: "environment" }, 
                 {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
+                    fps: 20, // Increased FPS for faster scanning
+                    qrbox: { width: 300, height: 200 }, // Wider box for barcodes
                     aspectRatio: 1.0,
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.EAN_13,
                         Html5QrcodeSupportedFormats.EAN_8,
                         Html5QrcodeSupportedFormats.UPC_A,
                         Html5QrcodeSupportedFormats.UPC_E,
+                        Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.CODE_39
                     ]
                 },
                 (decodedText) => {
-                    // Success
+                    // Success - Stop IMMEDIATELY
                     if (mountedRef.current) {
                         html5QrCode.stop().then(() => {
                             onScanSuccess(decodedText);
