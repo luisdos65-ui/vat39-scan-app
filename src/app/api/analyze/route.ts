@@ -36,11 +36,12 @@ export async function POST(req: NextRequest) {
         const base64Image = buffer.toString('base64');
 
         // Use Gemini 1.5 Flash for speed and multimodal capabilities
-        // NOTE: 'gemini-1.5-flash-latest' still resulted in 404 for v1beta in some regions/keys.
-        // Fallback to 'gemini-pro-vision' which is the stable multimodal model for v1beta.
-        // Although deprecated, it is the most reliable "old" endpoint until 1.5 is fully rolled out to all keys.
-        console.log("Calling Gemini API (model: gemini-pro-vision)...");
-        const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+        // NOTE: 'gemini-pro-vision' also resulted in 404 in some contexts.
+        // It seems v1beta requires specific models.
+        // Let's try the absolute most standard model identifier that should work.
+        // If this fails, we might need to check the API key permissions or project region.
+        console.log("Calling Gemini API (model: gemini-1.5-flash)...");
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
             Analyze this wine or spirit label image strictly and return a JSON object.
