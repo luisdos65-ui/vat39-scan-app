@@ -85,19 +85,4 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
 
   // UNREACHABLE CODE (Tesseract Fallback Removed)
   throw new Error("Tesseract Fallback disabled.");
-  
-  /* 
-  console.log('Falling back to Tesseract OCR...');
-  try {
-    // ... Tesseract Logic ...
-  }
-  */
-}
-
-  } catch (error) {
-    console.error("OCR Error or Timeout:", error);
-    // Return low confidence to trigger the Robust Fallback in product.ts
-    // MODIFIED: If OCR fails, we want to know it explicitly to show "AI Failed"
-    throw error;
-  }
 }
