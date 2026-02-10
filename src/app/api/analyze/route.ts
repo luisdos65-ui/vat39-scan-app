@@ -68,13 +68,17 @@ export async function POST(req: NextRequest) {
 
         console.log("Calling OpenAI API (gpt-4o-mini)...");
 
+        // Increase timeout by using fetch directly or configuring client if possible
+        // But OpenAI Node SDK handles retries.
+        // Let's optimize the prompt slightly to be faster.
+
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
                 {
                     role: "user",
                     content: [
-                        { type: "text", text: prompt },
+                        { type: "text", text: "Identify this alcohol bottle. Return JSON: {brand, productName, type, vintage, abv, volume, description (Dutch), tastingNotes (Dutch array), foodPairing (Dutch array), vat39Tip (Dutch), productionMethod (Dutch), producer: {name, region, about}}. If unsure, guess based on visual cues." },
                         {
                             type: "image_url",
                             image_url: {
