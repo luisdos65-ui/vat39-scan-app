@@ -81,12 +81,17 @@ export async function POST(req: NextRequest) {
                 break; 
             } catch (e: any) {
                 console.warn(`Failed with model ${modelName}:`, e.message);
+                // LOG THE FULL ERROR TO SEE THE CODE (404, 403, etc.)
+                if (e.response) {
+                     console.warn(`Error Response for ${modelName}:`, JSON.stringify(e.response, null, 2));
+                }
                 lastError = e;
                 // Continue to next model
             }
         }
 
         if (!result && lastError) {
+             console.error("All models failed. Last error:", lastError);
              throw lastError;
         }
 
