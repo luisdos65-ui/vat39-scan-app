@@ -1,24 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 
-// Initialize Gemini
-// NOTE: User must provide GEMINI_API_KEY in .env
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Initialize OpenAI
+// NOTE: User must provide OPENAI_API_KEY in .env
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function POST(req: NextRequest) {
     try {
-        console.log("Analyze API called");
+        console.log("Analyze API called (OpenAI version)");
         
-        if (!process.env.GEMINI_API_KEY) {
-            console.error("GEMINI_API_KEY is missing in environment variables");
+        if (!process.env.OPENAI_API_KEY) {
+            console.error("OPENAI_API_KEY is missing in environment variables");
             return NextResponse.json(
-                { error: "Server configuratie fout: GEMINI_API_KEY ontbreekt." },
+                { error: "Server configuratie fout: OPENAI_API_KEY ontbreekt." },
                 { status: 500 }
             );
         }
 
-        // Log key prefix for debugging (never log full key)
-        console.log(`GEMINI_API_KEY present, starts with: ${process.env.GEMINI_API_KEY.substring(0, 4)}...`);
+        // Log key prefix for debugging
+        console.log(`OPENAI_API_KEY present, starts with: ${process.env.OPENAI_API_KEY.substring(0, 4)}...`);
 
         const formData = await req.formData();
         const file = formData.get('image') as File;
@@ -34,22 +36,7 @@ export async function POST(req: NextRequest) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         const base64Image = buffer.toString('base64');
-
-        // Use Gemini 1.5 Flash for speed and multimodal capabilities
-        // We will try multiple model names to be robust against region/version availability.
-        // UPDATE: 'gemini-1.5-flash' and 'gemini-pro-vision' failed with 404.
-        // This often means the project/key is restricted to specific legacy models or paid tier.
-        // Trying 'gemini-pro' (text-only fallback? no, we need vision)
-        // Trying 'gemini-1.0-pro-vision-latest'
-        const modelsToTry = [
-            "gemini-1.5-flash", 
-            "gemini-1.5-flash-latest", 
-            "gemini-pro-vision", 
-            "gemini-1.0-pro-vision-latest"
-        ];
-        
-        let result = null;
-        let lastError = null;
+        const dataUrl = `data:${file.type || 'image/jpeg'};base64,${base64Image}`;
 
         const prompt = `
             Analyze this wine or spirit label image strictly and return a JSON object.
@@ -68,58 +55,45 @@ export async function POST(req: NextRequest) {
             Return ONLY the raw JSON string, no markdown formatting.
         `;
 
-        console.log("Calling Gemini API with fallback strategy...");
+        console.log("Calling OpenAI API (gpt-4o)...");
 
-        for (const modelName of modelsToTry) {
-            try {
-                console.log(`Attempting model: ${modelName}`);
-                const model = genAI.getGenerativeModel({ model: modelName });
-                
-                result = await model.generateContent([
-                    prompt,
-                    {
-                        inlineData: {
-                            data: base64Image,
-                            mimeType: file.type || 'image/jpeg'
-                        }
-                    }
-                ]);
-                
-                // If we get here, it worked!
-                console.log(`Success with model: ${modelName}`);
-                break; 
-            } catch (e: any) {
-                console.warn(`Failed with model ${modelName}:`, e.message);
-                // LOG THE FULL ERROR TO SEE THE CODE (404, 403, etc.)
-                // GoogleGenerativeAI often puts status in e.status or e.response
-                if (e.status) {
-                    console.warn(`Status for ${modelName}: ${e.status} ${e.statusText}`);
-                }
-                if (e.errorDetails) {
-                     console.warn(`Error Details for ${modelName}:`, JSON.stringify(e.errorDetails, null, 2));
-                }
-                lastError = e;
-                // Continue to next model
-            }
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "user",
+                    content: [
+                        { type: "text", text: prompt },
+                        {
+                            type: "image_url",
+                            image_url: {
+                                "url": dataUrl,
+                            },
+                        },
+                    ],
+                },
+            ],
+            max_tokens: 500,
+        });
+
+        console.log("OpenAI Response received");
+        const responseText = response.choices[0].message.content;
+
+        if (!responseText) {
+            throw new Error("No content in OpenAI response");
         }
 
-        if (!result && lastError) {
-             console.error("All models failed. Last error object:", JSON.stringify(lastError, Object.getOwnPropertyNames(lastError)));
-             throw lastError;
-        }
-
-        const responseText = result.response.text();
-        console.log("Gemini Response Raw:", responseText.substring(0, 100) + "...");
+        console.log("OpenAI Response Raw:", responseText.substring(0, 100) + "...");
         
         // Clean markdown code blocks if present
         const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         
         try {
             const data = JSON.parse(cleanedText);
-            console.log("Gemini Response Parsed:", data);
+            console.log("OpenAI Response Parsed:", data);
             return NextResponse.json(data);
         } catch (parseError) {
-            console.error("Failed to parse Gemini response:", responseText);
+            console.error("Failed to parse OpenAI response:", responseText);
             return NextResponse.json({ error: "Kon antwoord niet verwerken" }, { status: 500 });
         }
 
