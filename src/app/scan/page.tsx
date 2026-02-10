@@ -117,7 +117,7 @@ export default function ScanPage() {
 
       // 1. Start AI Analysis Promise (Don't await yet)
       const aiPromise = (async () => {
-          addLog("Starting AI Analysis (GPT-4o)...");
+          addLog("Start AI Analyse (GPT-4o)...");
           try {
              const product = await processScan(file);
              if (isBarcodeFound) return null; // Barcode already won
@@ -131,7 +131,7 @@ export default function ScanPage() {
       // 2. Start Barcode Analysis Promise
       const barcodePromise = (async () => {
           try {
-             addLog("Checking for barcode...");
+             addLog("Controleren op barcode...");
              const html5QrCode = new Html5Qrcode("reader-hidden");
              const barcode = await html5QrCode.scanFile(file, false);
              html5QrCode.clear();
