@@ -120,13 +120,52 @@ export default function ScanPage() {
             handleBarcodeScan(barcode);
             return;
         } catch (err) {
-            console.log("No barcode found in image, fallback to AI?", err);
+            console.log("No barcode found in image, fallback to AI.", err);
             html5QrCode.clear();
-            
-            setIsProcessing(false);
-            alert("Geen streepjescode gevonden in de foto.\n\nZorg dat de streepjescode goed zichtbaar en scherp is.");
-            return;
+            // FALLBACK: If no barcode is found, proceed to AI Visual Scan (OCR)
+            // This ensures the user gets a result even if the barcode is blurry or missing.
+            addLog("Barcode not found. Starting AI Visual Analysis...");
         }
+
+        // Proceed to AI processing (OCR/Vision)
+        addLog("Processing image with AI...");
+        // Step 1: OCR
+        setProcessingStep('ocr');
+        const product = await processScan(file);
+        
+        // Simulate other steps for better UX since processScan does it all in parallel now
+        // In a real LLM flow these would be distinct await calls
+        setProcessingStep('search');
+        await new Promise(r => setTimeout(r, 800));
+        
+        setProcessingStep('parse');
+        await new Promise(r => setTimeout(r, 800));
+
+        setProcessingStep('verify');
+        await new Promise(r => setTimeout(r, 600));
+
+        addLog(`Scan success: ${product.name}`);
+        
+        // Save to local history
+        try {
+            const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
+            try {
+                localStorage.setItem('recentScans', JSON.stringify([product, ...recentScans].slice(0, 10)));
+            } catch (quotaError) {
+                console.warn("Storage quota exceeded, clearing old scans to make space.");
+                // Try saving only the new product
+                localStorage.setItem('recentScans', JSON.stringify([product]));
+            }
+        } catch (storageError) {
+             addLog("Storage Warning: Could not save history");
+             console.error(storageError);
+             // Even if storage fails, we should try to persist this one item for the next page
+             try {
+                sessionStorage.setItem('currentProduct', JSON.stringify(product));
+             } catch(e) {}
+        }
+
+        router.push(`/product/${product.id}`);
 
       } catch (error) {
         console.error('Scan failed:', error);
