@@ -109,90 +109,24 @@ export default function ScanPage() {
 
       addLog(`Start scan: ${file.name} (${(file.size / 1024).toFixed(0)}KB)`);
       
-      // PARALLEL STRATEGY: Race between Barcode (Fast/Accurate) and AI (Smart/Robust)
-      // We start both. If barcode finds something, it wins.
-      // If barcode fails, we just wait for AI.
-      
-      let isBarcodeFound = false;
-
-      // 1. Start AI Analysis Promise (Don't await yet)
-      const aiPromise = (async () => {
-          addLog("Start AI Analyse (Turbo Mode)...");
-          try {
-             const product = await processScan(file);
-             
-             // Check if it fell back to OCR and produced bad results (SHOULD NOT HAPPEN ANYMORE)
-             if (product.scanMethod === 'OCR') {
-                 addLog("Warning: Unexpected OCR fallback.");
-             }
-             
-             if (isBarcodeFound) return { cancelled: true }; // Barcode already won
-             return { product };
-          } catch (e) {
-             console.error("AI Error:", e);
-             return { error: e };
-          }
-      })();
-
-      // 2. Start Barcode Analysis Promise
-      const barcodePromise = (async () => {
-          try {
-             addLog("Controleren op barcode...");
-             const html5QrCode = new Html5Qrcode("reader-hidden");
-             const barcode = await html5QrCode.scanFile(file, false);
-             html5QrCode.clear();
-             
-             if (barcode) {
-                 addLog(`Barcode found: ${barcode}`);
-                 isBarcodeFound = true;
-                 handleBarcodeScan(barcode); // This triggers redirect
-                 return true; // Winner
-             }
-          } catch (e) {
-             console.log("No barcode in image (or scan failed)");
-             // Do not error out, just let AI continue
-          }
-          return false;
-      })();
-
       try {
-        // Wait for barcode first (it's usually faster if present)
-        // But we don't want to block AI if barcode takes long (unlikely for local)
-        // Actually, scanFile can be slow on huge images.
+        addLog("Start AI Analyse (Turbo Mode)...");
         
-        // We race? No, we want barcode to override AI if found.
+        // Pure AI Analysis - No Barcode Race
+        const product = await processScan(file);
         
-        // Let's await barcode first, but with a short timeout?
-        // No, user wants "Instant". 
-        
-        // If we await barcode, and it takes 2s to say "no", that's 2s wasted.
-        // But AI takes 4-5s anyway.
-        
-        const barcodeResult = await barcodePromise;
-        if (barcodeResult) return; // Barcode won and handled redirect
-
-        addLog("No barcode found. Waiting for AI...");
-        
-        // If barcode didn't find anything, we rely on AI
-        const aiResult = await aiPromise;
-        
-        if (aiResult.product) {
-            const aiProduct = aiResult.product;
-            // Simulate steps for UX (if it was too fast, which is rare for GPT-4o)
+        if (product) {
+            // Simulate steps for UX
             setProcessingStep('search');
             await new Promise(r => setTimeout(r, 500));
             setProcessingStep('parse');
             setProcessingStep('verify');
             
-            addLog(`AI Success: ${aiProduct.name}`);
-            saveToHistory(aiProduct);
-            router.push(`/product/${aiProduct.id}`);
-        } else if (aiResult.error) {
-            throw aiResult.error; // Throw the REAL error from AI
-        } else if (aiResult.cancelled) {
-             return; // Barcode won
+            addLog(`AI Success: ${product.name}`);
+            saveToHistory(product);
+            router.push(`/product/${product.id}`);
         } else {
-            throw new Error("Geen resultaat van AI of Barcode.");
+            throw new Error("Geen resultaat van AI.");
         }
 
       } catch (error) {
