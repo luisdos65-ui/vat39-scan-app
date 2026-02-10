@@ -55,8 +55,13 @@ export async function findProducerInfo(scannedData: ScannedData): Promise<Produc
 
   // Dynamic Fallback with Search Link (simulating "PARTIAL" or "UNKNOWN" status)
   // IMPROVEMENT: If we have a brand name, use it! Don't just say "Onbekend".
-  const displayName = (brand && brand !== 'Onbekend Merk') ? brand : "Onbekend";
+  let displayName = (brand && brand !== 'Onbekend Merk') ? brand : "Onbekend";
   
+  // Extra garbage check for producer name (preventing OCR noise like | ' | e |)
+  if (displayName.length < 3 || displayName.match(/[|{}[\]]/)) {
+      displayName = "Onbekend";
+  }
+
   const isUnknown = displayName === "Onbekend";
 
   return {

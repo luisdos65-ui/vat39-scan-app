@@ -221,7 +221,7 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
     // Helper to clean garbage text
     const cleanLine = (text: string) => {
         // Remove pipe characters, brackets, common OCR noise
-        return text.replace(/[|\[\]{}_=<>~]/g, '').trim();
+        return text.replace(/[|\[\]{}_=<>~‘'’`]/g, '').trim();
     };
 
     const isGarbage = (text: string) => {
@@ -233,7 +233,10 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
         // Check ratio of symbols to length
         const symbols = text.replace(/[a-zA-Z0-9\s.,-]/g, '').length;
         if (symbols > text.length * 0.3) return true; // >30% symbols is garbage
-
+        
+        // Check for common OCR garbage patterns
+        if (text.match(/^[0-9\s.,|]+$/)) return true; // Just numbers/symbols
+        
         return false;
     };
 
