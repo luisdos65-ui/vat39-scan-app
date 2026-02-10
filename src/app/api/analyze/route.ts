@@ -37,7 +37,16 @@ export async function POST(req: NextRequest) {
 
         // Use Gemini 1.5 Flash for speed and multimodal capabilities
         // We will try multiple model names to be robust against region/version availability.
-        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro-vision"];
+        // UPDATE: 'gemini-1.5-flash' and 'gemini-pro-vision' failed with 404.
+        // This often means the project/key is restricted to specific legacy models or paid tier.
+        // Trying 'gemini-pro' (text-only fallback? no, we need vision)
+        // Trying 'gemini-1.0-pro-vision-latest'
+        const modelsToTry = [
+            "gemini-1.5-flash", 
+            "gemini-1.5-flash-latest", 
+            "gemini-pro-vision", 
+            "gemini-1.0-pro-vision-latest"
+        ];
         
         let result = null;
         let lastError = null;
