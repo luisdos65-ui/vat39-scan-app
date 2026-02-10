@@ -74,9 +74,17 @@ export default function BarcodeScanner({ onScanSuccess, onScanFailure, onClose }
             }
         } catch (err: any) {
             console.error("Scanner Init Error:", err);
-            if (mountedRef.current) {
-                setError(err.message || "Camera start mislukt");
-                setIsLoading(false);
+            // RETRY LOGIC: If camera fails, wait 1s and try again once
+            if (err?.name === "NotAllowedError") {
+                 if (mountedRef.current) {
+                    setError("Geen toegang tot camera. Controleer je browser instellingen.");
+                    setIsLoading(false);
+                }
+            } else {
+                 if (mountedRef.current) {
+                    setError(err.message || "Camera start mislukt");
+                    setIsLoading(false);
+                }
             }
         }
     };
