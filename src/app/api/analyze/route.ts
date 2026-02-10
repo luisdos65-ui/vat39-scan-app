@@ -17,6 +17,9 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Log key prefix for debugging (never log full key)
+        console.log(`GEMINI_API_KEY present, starts with: ${process.env.GEMINI_API_KEY.substring(0, 4)}...`);
+
         const formData = await req.formData();
         const file = formData.get('image') as File;
 
@@ -25,7 +28,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Geen afbeelding ontvangen" }, { status: 400 });
         }
         
-        console.log(`Processing image: ${file.name} (${file.size} bytes)`);
+        console.log(`Processing image: ${file.name} (${file.size} bytes, type: ${file.type})`);
 
         // Convert File to ArrayBuffer then to Base64
         const arrayBuffer = await file.arrayBuffer();
@@ -33,7 +36,7 @@ export async function POST(req: NextRequest) {
         const base64Image = buffer.toString('base64');
 
         // Use Gemini 1.5 Flash for speed and multimodal capabilities
-        console.log("Calling Gemini API...");
+        console.log("Calling Gemini API (model: gemini-1.5-flash)...");
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
@@ -53,35 +56,48 @@ export async function POST(req: NextRequest) {
             Return ONLY the raw JSON string, no markdown formatting.
         `;
 
-        const result = await model.generateContent([
-            prompt,
-            {
-                inlineData: {
-                    data: base64Image,
-                    mimeType: file.type || 'image/jpeg'
-                }
-            }
-        ]);
-
-        const responseText = result.response.text();
-        console.log("Gemini Response Raw:", responseText.substring(0, 100) + "...");
-        
-        // Clean markdown code blocks if present
-        const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        
         try {
-            const data = JSON.parse(cleanedText);
-            console.log("Gemini Response Parsed:", data);
-            return NextResponse.json(data);
-        } catch (parseError) {
-            console.error("Failed to parse Gemini response:", responseText);
-            return NextResponse.json({ error: "Kon antwoord niet verwerken" }, { status: 500 });
+            const result = await model.generateContent([
+                prompt,
+                {
+                    inlineData: {
+                        data: base64Image,
+                        mimeType: file.type || 'image/jpeg'
+                    }
+                }
+            ]);
+
+            const responseText = result.response.text();
+            console.log("Gemini Response Raw:", responseText.substring(0, 100) + "...");
+            
+            // Clean markdown code blocks if present
+            const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            
+            try {
+                const data = JSON.parse(cleanedText);
+                console.log("Gemini Response Parsed:", data);
+                return NextResponse.json(data);
+            } catch (parseError) {
+                console.error("Failed to parse Gemini response:", responseText);
+                return NextResponse.json({ error: "Kon antwoord niet verwerken" }, { status: 500 });
+            }
+        } catch (geminiError: any) {
+            // Detailed Gemini Error Logging
+            console.error("Gemini API Call Failed:");
+            console.error("Message:", geminiError.message);
+            console.error("Stack:", geminiError.stack);
+            if (geminiError.response) {
+                 console.error("Response:", JSON.stringify(geminiError.response, null, 2));
+            }
+            throw geminiError; // Re-throw to be caught by outer block
         }
 
-    } catch (error) {
-        console.error("Gemini API Error:", error);
+    } catch (error: any) {
+        console.error("General API Error:", error);
+        // Ensure we send a useful error message back to client
+        const errorMessage = error.message || "Onbekende fout";
         return NextResponse.json(
-            { error: "Fout bij analyseren van afbeelding" },
+            { error: `Fout bij analyseren: ${errorMessage}` },
             { status: 500 }
         );
     }
