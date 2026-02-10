@@ -42,6 +42,23 @@ export async function POST(req: NextRequest) {
         let result = null;
         let lastError = null;
 
+        const prompt = `
+            Analyze this wine or spirit label image strictly and return a JSON object.
+            Do not invent information. If a field is not visible, use null.
+            
+            Extract the following:
+            - brand: The main brand name (e.g. "Glenfiddich", "Chateau Margaux")
+            - productName: The specific product name (e.g. "12 Year Old", "Grand Vin")
+            - type: "Wijn", "Whisky", "Gin", "Rum", "Vodka", or "Overig"
+            - vintage: Year (e.g. "2018")
+            - abv: Alcohol percentage (e.g. "40%")
+            - volume: Bottle size (e.g. "70cl", "750ml")
+            - producer: Full producer name if different from brand
+            - region: Region or Country of origin (e.g. "Speyside, Scotland", "Bordeaux, France")
+            
+            Return ONLY the raw JSON string, no markdown formatting.
+        `;
+
         console.log("Calling Gemini API with fallback strategy...");
 
         for (const modelName of modelsToTry) {
