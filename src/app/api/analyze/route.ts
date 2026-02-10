@@ -77,25 +77,15 @@ export async function POST(req: NextRequest) {
         console.log("Gemini Response Raw:", responseText.substring(0, 100) + "...");
         
         // Clean markdown code blocks if present
-            const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-            
-            try {
-                const data = JSON.parse(cleanedText);
-                console.log("Gemini Response Parsed:", data);
-                return NextResponse.json(data);
-            } catch (parseError) {
-                console.error("Failed to parse Gemini response:", responseText);
-                return NextResponse.json({ error: "Kon antwoord niet verwerken" }, { status: 500 });
-            }
-        } catch (geminiError: any) {
-            // Detailed Gemini Error Logging
-            console.error("Gemini API Call Failed:");
-            console.error("Message:", geminiError.message);
-            console.error("Stack:", geminiError.stack);
-            if (geminiError.response) {
-                 console.error("Response:", JSON.stringify(geminiError.response, null, 2));
-            }
-            throw geminiError; // Re-throw to be caught by outer block
+        const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        
+        try {
+            const data = JSON.parse(cleanedText);
+            console.log("Gemini Response Parsed:", data);
+            return NextResponse.json(data);
+        } catch (parseError) {
+            console.error("Failed to parse Gemini response:", responseText);
+            return NextResponse.json({ error: "Kon antwoord niet verwerken" }, { status: 500 });
         }
 
     } catch (error: any) {
