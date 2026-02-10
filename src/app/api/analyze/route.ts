@@ -7,7 +7,10 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: NextRequest) {
     try {
+        console.log("Analyze API called");
+        
         if (!process.env.GEMINI_API_KEY) {
+            console.error("GEMINI_API_KEY is missing in environment variables");
             return NextResponse.json(
                 { error: "Server configuratie fout: GEMINI_API_KEY ontbreekt." },
                 { status: 500 }
@@ -18,8 +21,11 @@ export async function POST(req: NextRequest) {
         const file = formData.get('image') as File;
 
         if (!file) {
+            console.error("No image file received in request");
             return NextResponse.json({ error: "Geen afbeelding ontvangen" }, { status: 400 });
         }
+        
+        console.log(`Processing image: ${file.name} (${file.size} bytes)`);
 
         // Convert File to ArrayBuffer then to Base64
         const arrayBuffer = await file.arrayBuffer();
@@ -27,6 +33,7 @@ export async function POST(req: NextRequest) {
         const base64Image = buffer.toString('base64');
 
         // Use Gemini 1.5 Flash for speed and multimodal capabilities
+        console.log("Calling Gemini API...");
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
@@ -57,12 +64,14 @@ export async function POST(req: NextRequest) {
         ]);
 
         const responseText = result.response.text();
+        console.log("Gemini Response Raw:", responseText.substring(0, 100) + "...");
         
         // Clean markdown code blocks if present
         const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         
         try {
             const data = JSON.parse(cleanedText);
+            console.log("Gemini Response Parsed:", data);
             return NextResponse.json(data);
         } catch (parseError) {
             console.error("Failed to parse Gemini response:", responseText);
