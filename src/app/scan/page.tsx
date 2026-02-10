@@ -109,69 +109,107 @@ export default function ScanPage() {
 
       addLog(`Start scan: ${file.name} (${(file.size / 1024).toFixed(0)}KB)`);
       
+      // PARALLEL STRATEGY: Race between Barcode (Fast/Accurate) and AI (Smart/Robust)
+      // We start both. If barcode finds something, it wins.
+      // If barcode fails, we just wait for AI.
+      
+      let isBarcodeFound = false;
+
+      // 1. Start AI Analysis Promise (Don't await yet)
+      const aiPromise = (async () => {
+          addLog("Starting AI Analysis (GPT-4o)...");
+          try {
+             const product = await processScan(file);
+             if (isBarcodeFound) return null; // Barcode already won
+             return product;
+          } catch (e) {
+             console.error("AI Error:", e);
+             return null;
+          }
+      })();
+
+      // 2. Start Barcode Analysis Promise
+      const barcodePromise = (async () => {
+          try {
+             addLog("Checking for barcode...");
+             const html5QrCode = new Html5Qrcode("reader-hidden");
+             const barcode = await html5QrCode.scanFile(file, false);
+             html5QrCode.clear();
+             
+             if (barcode) {
+                 addLog(`Barcode found: ${barcode}`);
+                 isBarcodeFound = true;
+                 handleBarcodeScan(barcode); // This triggers redirect
+                 return true; // Winner
+             }
+          } catch (e) {
+             console.log("No barcode in image (or scan failed)");
+             // Do not error out, just let AI continue
+          }
+          return false;
+      })();
+
       try {
-        addLog("Scanning for barcode in image...");
-        // NEW: Try client-side barcode scan first
-        const html5QrCode = new Html5Qrcode("reader-hidden");
-        try {
-            const barcode = await html5QrCode.scanFile(file, false);
-            addLog(`Barcode found in image: ${barcode}`);
-            html5QrCode.clear();
-            handleBarcodeScan(barcode);
-            return;
-        } catch (err) {
-            console.log("No barcode found in image, fallback to AI.", err);
-            html5QrCode.clear();
-            // FALLBACK: If no barcode is found, proceed to AI Visual Scan (OCR)
-            // This ensures the user gets a result even if the barcode is blurry or missing.
-            addLog("Barcode not found. Starting AI Visual Analysis...");
+        // Wait for barcode first (it's usually faster if present)
+        // But we don't want to block AI if barcode takes long (unlikely for local)
+        // Actually, scanFile can be slow on huge images.
+        
+        // We race? No, we want barcode to override AI if found.
+        
+        // Let's await barcode first, but with a short timeout?
+        // No, user wants "Instant". 
+        
+        // If we await barcode, and it takes 2s to say "no", that's 2s wasted.
+        // But AI takes 4-5s anyway.
+        
+        const barcodeResult = await barcodePromise;
+        if (barcodeResult) return; // Barcode won and handled redirect
+
+        addLog("No barcode found. Waiting for AI...");
+        
+        // If barcode didn't find anything, we rely on AI
+        const aiProduct = await aiPromise;
+        
+        if (aiProduct) {
+            // Simulate steps for UX (if it was too fast, which is rare for GPT-4o)
+            setProcessingStep('search');
+            await new Promise(r => setTimeout(r, 500));
+            setProcessingStep('parse');
+            setProcessingStep('verify');
+            
+            addLog(`AI Success: ${aiProduct.name}`);
+            saveToHistory(aiProduct);
+            router.push(`/product/${aiProduct.id}`);
+        } else {
+            throw new Error("Geen resultaat van AI of Barcode.");
         }
 
-        // Proceed to AI processing (OCR/Vision)
-        addLog("Processing image with AI...");
-        // Step 1: OCR
-        setProcessingStep('ocr');
-        const product = await processScan(file);
+      } catch (error) {
+        console.error('Scan failed:', error);
+        let errorMessage = 'Kon de foto niet verwerken.';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+            if (errorMessage.includes("500")) errorMessage = "Server fout (Controleer API Key).";
+        }
         
-        // Simulate other steps for better UX since processScan does it all in parallel now
-        // In a real LLM flow these would be distinct await calls
-        setProcessingStep('search');
-        await new Promise(r => setTimeout(r, 800));
-        
-        setProcessingStep('parse');
-        await new Promise(r => setTimeout(r, 800));
+        setIsProcessing(false);
+        alert(`Helaas, we konden dit niet herkennen.\n\nFout: ${errorMessage}`);
+        addLog(`ERROR: ${errorMessage}`);
+      }
+  };
 
-        setProcessingStep('verify');
-        await new Promise(r => setTimeout(r, 600));
-
-        addLog(`Scan success: ${product.name}`);
-        
-        // Save to local history
+  const saveToHistory = (product: any) => {
         try {
             const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
             try {
                 localStorage.setItem('recentScans', JSON.stringify([product, ...recentScans].slice(0, 10)));
             } catch (quotaError) {
-                console.warn("Storage quota exceeded, clearing old scans to make space.");
                 // Try saving only the new product
                 localStorage.setItem('recentScans', JSON.stringify([product]));
             }
-        } catch (storageError) {
-             addLog("Storage Warning: Could not save history");
-             console.error(storageError);
-             // Even if storage fails, we should try to persist this one item for the next page
-             try {
-                sessionStorage.setItem('currentProduct', JSON.stringify(product));
-             } catch(e) {}
+        } catch (e) {
+             console.error("Storage error", e);
         }
-
-        router.push(`/product/${product.id}`);
-
-      } catch (error) {
-        console.error('Scan failed:', error);
-        setIsProcessing(false);
-        alert("Fout bij verwerken foto.");
-      }
   };
 
   // Cleanup old mocks from history on mount
