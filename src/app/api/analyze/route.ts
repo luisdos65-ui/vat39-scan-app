@@ -36,8 +36,16 @@ export async function POST(req: NextRequest) {
         const base64Image = buffer.toString('base64');
 
         // Use Gemini 1.5 Flash for speed and multimodal capabilities
+        // NOTE: 'gemini-1.5-flash' might not be available in v1beta yet or requires specific region.
+        // Fallback to 'gemini-pro-vision' which is the stable multimodal model for v1beta, 
+        // OR try 'gemini-1.5-flash-latest' if available.
+        // For now, let's use the most standard multimodal model that is widely available.
         console.log("Calling Gemini API (model: gemini-1.5-flash)...");
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // Update: Using 'gemini-1.5-flash' resulted in 404 Not Found.
+        // Switching to 'gemini-2.0-flash-exp' or 'gemini-1.5-flash-latest' or standard 'gemini-pro-vision' (deprecated but works).
+        // Best bet currently for stable v1beta is often just 'gemini-1.5-flash' but maybe the account doesn't have access?
+        // Let's try 'gemini-1.5-flash-latest' which is often the alias.
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         const prompt = `
             Analyze this wine or spirit label image strictly and return a JSON object.
