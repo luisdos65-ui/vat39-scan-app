@@ -41,21 +41,20 @@ export default function BarcodeScanner({ onScanSuccess, onScanFailure, onClose }
                     { facingMode: "environment" }, 
                     {
                         fps: 30, // MAX FPS for instant capture
-                        qrbox: { width: 280, height: 180 }, // Optimal for standard barcodes
+                        qrbox: { width: 250, height: 250 }, // Use square box for better compatibility
                         aspectRatio: 1.0,
                         disableFlip: false,
-                        formatsToSupport: [
-                            Html5QrcodeSupportedFormats.EAN_13,
-                            Html5QrcodeSupportedFormats.EAN_8,
-                            Html5QrcodeSupportedFormats.UPC_A,
-                            Html5QrcodeSupportedFormats.UPC_E,
-                            Html5QrcodeSupportedFormats.CODE_128,
-                            Html5QrcodeSupportedFormats.CODE_39
-                        ]
+                        // Removed explicit formats to support ALL formats by default
+                        // formatsToSupport: [...] 
                     },
                     (decodedText) => {
                         // Success - Stop IMMEDIATELY
                          if (scannerRef.current?.isScanning) {
+                            // Vibrate if supported
+                            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                                navigator.vibrate(200);
+                            }
+                            
                             scannerRef.current.stop().then(() => {
                                 if (mountedRef.current) {
                                     onScanSuccess(decodedText);
