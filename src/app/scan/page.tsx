@@ -34,10 +34,12 @@ export default function ScanPage() {
     try {
         const product = await fetchProductByBarcode(barcode);
         
+        // Product is guaranteed to be returned now (either real or fallback)
         if (!product) {
-            alert(`Geen product gevonden voor barcode: ${barcode}. Probeer het etiket te scannen of zoek handmatig.`);
-            setIsProcessing(false);
-            return;
+             // Should not happen with new logic, but safe guard
+             alert("Er is een onbekende fout opgetreden.");
+             setIsProcessing(false);
+             return;
         }
 
         addLog(`Barcode success: ${product.name}`);
@@ -194,18 +196,11 @@ export default function ScanPage() {
       <div className="w-full px-4">
         {!isProcessing && !showBarcodeScanner && (
             <div className="space-y-4">
-                <CameraCapture onCapture={handleCapture} isProcessing={isProcessing} />
-                
-                <div className="flex justify-center">
-                    <Button 
-                        variant="outline" 
-                        className="flex items-center gap-2 bg-white/5 border-white/10 text-text hover:bg-white/10"
-                        onClick={() => setShowBarcodeScanner(true)}
-                    >
-                        <Barcode className="w-4 h-4" />
-                        Scan Streepjescode
-                    </Button>
-                </div>
+                <CameraCapture 
+                    onCapture={handleCapture} 
+                    isProcessing={isProcessing} 
+                    onBarcodeScan={() => setShowBarcodeScanner(true)}
+                />
             </div>
         )}
 

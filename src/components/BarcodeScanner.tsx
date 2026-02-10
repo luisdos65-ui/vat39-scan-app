@@ -41,7 +41,8 @@ export default function BarcodeScanner({ onScanSuccess, onScanFailure, onClose }
                     { facingMode: "environment" }, 
                     {
                         fps: 30, // MAX FPS for instant capture
-                        qrbox: { width: 250, height: 250 }, // Use square box for better compatibility
+                        // Optimized for mobile phones (portrait) - wider box for barcodes
+                        qrbox: { width: 300, height: 150 }, 
                         aspectRatio: 1.0,
                         disableFlip: false,
                         // Removed explicit formats to support ALL formats by default

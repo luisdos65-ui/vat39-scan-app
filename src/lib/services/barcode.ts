@@ -7,18 +7,17 @@ export async function fetchProductByBarcode(barcode: string): Promise<Product | 
     console.log(`Fetching product for barcode: ${barcode}`);
     const response = await fetch(`${OFF_API_URL}${barcode}.json`);
     
-    if (!response.ok) {
-        if (response.status === 404) {
-            console.log("Product not found in OpenFoodFacts");
-            return null;
-        }
-        throw new Error(`OpenFoodFacts API Error: ${response.status}`);
+    // If not found in OpenFoodFacts, return a placeholder product
+    // so the user can manually edit/verify instead of getting stuck
+    if (!response.ok || response.status === 404) {
+        console.log("Product not found in OpenFoodFacts, returning placeholder");
+        return createFallbackProduct(barcode);
     }
 
     const data = await response.json();
     
     if (data.status === 0 || !data.product) {
-        return null;
+        return createFallbackProduct(barcode);
     }
 
     const p = data.product;
@@ -26,13 +25,13 @@ export async function fetchProductByBarcode(barcode: string): Promise<Product | 
     // Map OFF data to our Product type
     const product: Product = {
         id: crypto.randomUUID(),
-        name: p.product_name || p.product_name_en || p.product_name_nl || 'Onbekend Product',
+        name: p.product_name || p.product_name_en || p.product_name_nl || `Barcode: ${barcode}`,
         brand: p.brands || 'Onbekend Merk',
         category: p.categories_tags?.[0]?.replace('en:', '') || 'Wijn / Gedistilleerd',
-        image: p.image_url || p.image_front_url,
+        image: p.image_url || p.image_front_url || "https://images.unsplash.com/photo-1569919659476-f0852f6834b7?auto=format&fit=crop&q=80&w=1000",
         abv: p.nutriments?.alcohol ? `${p.nutriments.alcohol}%` : undefined,
         volume: p.quantity,
-        vintage: undefined, // OFF rarely has vintage for wine
+        vintage: undefined,
         producer: {
             name: p.brands || 'Onbekend',
             region: p.origins || undefined,
@@ -40,8 +39,8 @@ export async function fetchProductByBarcode(barcode: string): Promise<Product | 
         },
         scannedAt: new Date(),
         scanMethod: 'BARCODE',
-        verificationStatus: 'VERIFIED', // It's a real product from a database
-        vivino: undefined, // We could try to search Vivino by name later
+        verificationStatus: 'VERIFIED',
+        vivino: undefined,
         vat39Recommendation: undefined,
         productionMethod: undefined,
         citations: []
@@ -51,6 +50,26 @@ export async function fetchProductByBarcode(barcode: string): Promise<Product | 
 
   } catch (error) {
     console.error("Barcode lookup failed:", error);
-    return null;
+    return createFallbackProduct(barcode);
   }
+}
+
+function createFallbackProduct(barcode: string): Product {
+    return {
+        id: crypto.randomUUID(),
+        name: `Barcode: ${barcode}`,
+        brand: "Niet gevonden",
+        category: "Wijn / Gedistilleerd",
+        image: "https://images.unsplash.com/photo-1569919659476-f0852f6834b7?auto=format&fit=crop&q=80&w=1000",
+        producer: {
+            name: "Onbekend",
+        },
+        scannedAt: new Date(),
+        scanMethod: 'BARCODE',
+        verificationStatus: 'UNKNOWN',
+        vivino: undefined,
+        vat39Recommendation: undefined,
+        productionMethod: undefined,
+        citations: []
+    };
 }
