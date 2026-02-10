@@ -1,15 +1,19 @@
 'use client';
 
-import { Camera, Upload, ScanLine, Loader2, Search } from 'lucide-react';
+import { Camera, Upload, ScanLine, Loader2, Search, Barcode } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { processScan, processTextSearch } from '@/lib/services/product';
+import { fetchProductByBarcode } from '@/lib/services/barcode';
 import CameraCapture from '@/components/CameraCapture';
+import BarcodeScanner from '@/components/BarcodeScanner';
 import ProcessingOverlay from '@/components/ProcessingOverlay';
+import { Button } from '@/components/ui/button';
 
 export default function ScanPage() {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [processingStep, setProcessingStep] = useState('ocr');
   const [searchQuery, setSearchQuery] = useState('');
   const [errorLog, setErrorLog] = useState<string[]>([]); // New debug log state
@@ -20,6 +24,42 @@ export default function ScanPage() {
     console.log(msg);
     setErrorLog(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${msg}`]);
   };
+
+  const handleBarcodeScan = async (barcode: string) => {
+    setShowBarcodeScanner(false);
+    setIsProcessing(true);
+    setProcessingStep('search');
+    addLog(`Barcode found: ${barcode}`);
+
+    try {
+        const product = await fetchProductByBarcode(barcode);
+        
+        if (!product) {
+            alert(`Geen product gevonden voor barcode: ${barcode}. Probeer het etiket te scannen of zoek handmatig.`);
+            setIsProcessing(false);
+            return;
+        }
+
+        addLog(`Barcode success: ${product.name}`);
+        
+        // Save to local history
+        try {
+            const recentScans = JSON.parse(localStorage.getItem('recentScans') || '[]');
+            localStorage.setItem('recentScans', JSON.stringify([product, ...recentScans].slice(0, 10)));
+        } catch (e) {
+            console.error(e);
+        }
+
+        router.push(`/product/${product.id}`);
+
+    } catch (error) {
+        console.error("Barcode lookup failed:", error);
+        addLog("Barcode error");
+        setIsProcessing(false);
+        alert("Fout bij ophalen barcode info.");
+    }
+  };
+
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,8 +192,28 @@ export default function ScanPage() {
 
       {/* New Camera Component */}
       <div className="w-full px-4">
-        {!isProcessing && (
-            <CameraCapture onCapture={handleCapture} isProcessing={isProcessing} />
+        {!isProcessing && !showBarcodeScanner && (
+            <div className="space-y-4">
+                <CameraCapture onCapture={handleCapture} isProcessing={isProcessing} />
+                
+                <div className="flex justify-center">
+                    <Button 
+                        variant="outline" 
+                        className="flex items-center gap-2 bg-white/5 border-white/10 text-text hover:bg-white/10"
+                        onClick={() => setShowBarcodeScanner(true)}
+                    >
+                        <Barcode className="w-4 h-4" />
+                        Scan Streepjescode
+                    </Button>
+                </div>
+            </div>
+        )}
+
+        {showBarcodeScanner && (
+            <BarcodeScanner 
+                onScanSuccess={handleBarcodeScan} 
+                onClose={() => setShowBarcodeScanner(false)} 
+            />
         )}
       </div>
 
