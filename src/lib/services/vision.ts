@@ -285,8 +285,17 @@ export async function extractDataFromImage(imageFile: File): Promise<ScannedData
     } else if (lines.length > 0) {
         // Fallback: Use the line with highest confidence
         const sortedByConf = [...lines].sort((a: any, b: any) => b.confidence - a.confidence);
-        brand = sortedByConf[0].text.trim();
-        if (sortedByConf.length > 1) productName = sortedByConf[1].text.trim();
+        
+        const bestLine = cleanLine(sortedByConf[0].text);
+        if (!isGarbage(bestLine)) {
+             brand = bestLine;
+             if (sortedByConf.length > 1) {
+                 const secondLine = cleanLine(sortedByConf[1].text);
+                 if (!isGarbage(secondLine)) {
+                     productName = secondLine;
+                 }
+             }
+        }
     }
 
     // Heuristic: Only fail if ABSOLUTELY no text

@@ -190,6 +190,35 @@ export default function ProductPage() {
         </div>
       </div>
 
+      {/* Unknown Product Warning */}
+      { (product.brand === 'Onbekend Merk' || product.brand === 'Unknown' || product.name.toLowerCase().includes('onbekend product')) && (
+          <motion.div 
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="mx-4 bg-amber-50 border border-amber-200 rounded-lg p-4 text-center space-y-3"
+          >
+              <div className="flex justify-center text-amber-500 mb-1">
+                  <AlertCircle className="w-8 h-8" />
+              </div>
+              <h3 className="font-semibold text-amber-800">Niet goed herkend?</h3>
+              <p className="text-sm text-amber-700">We konden de tekst op het label niet goed lezen. Probeer het opnieuw met betere belichting of zoek handmatig.</p>
+              <div className="flex gap-2 justify-center pt-2">
+                  <button 
+                    onClick={() => router.push('/scan')}
+                    className="px-4 py-2 bg-white border border-amber-300 text-amber-800 rounded-md text-sm font-medium shadow-sm hover:bg-amber-50 transition-colors"
+                  >
+                    Opnieuw Scannen
+                  </button>
+                  <button 
+                    onClick={() => router.push('/discover')} 
+                    className="px-4 py-2 bg-amber-600 text-white rounded-md text-sm font-medium shadow-sm hover:bg-amber-700 transition-colors"
+                  >
+                    Zoek Handmatig
+                  </button>
+              </div>
+          </motion.div>
+      )}
+
       {/* Score Card - Vat39 Score (User) or Vivino Score */}
       {(product.userScore || product.vivino) && (
         <motion.div 
