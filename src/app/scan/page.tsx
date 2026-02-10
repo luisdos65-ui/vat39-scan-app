@@ -117,9 +117,18 @@ export default function ScanPage() {
 
       // 1. Start AI Analysis Promise (Don't await yet)
       const aiPromise = (async () => {
-          addLog("Start AI Analyse (GPT-4o)...");
+          addLog("Start AI Analyse (Turbo Mode)...");
           try {
              const product = await processScan(file);
+             
+             // Check if it fell back to OCR and produced bad results
+             if (product.scanMethod === 'OCR' && product.brand === 'Onbekend Merk') {
+                 // Throwing here allows the UI to show a specific "AI Failed" alert instead of a bad product
+                 // But only if barcode also failed.
+                 // We'll return it, but log a warning.
+                 addLog("AI Failed, using local fallback.");
+             }
+             
              if (isBarcodeFound) return null; // Barcode already won
              return product;
           } catch (e) {

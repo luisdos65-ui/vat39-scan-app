@@ -55,10 +55,10 @@ export async function POST(req: NextRequest) {
             Return ONLY the raw JSON string, no markdown formatting.
         `;
 
-        console.log("Calling OpenAI API (gpt-4o)...");
+        console.log("Calling OpenAI API (gpt-4o-mini)...");
 
         const response = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model: "gpt-4o-mini",
             messages: [
                 {
                     role: "user",
@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
                             type: "image_url",
                             image_url: {
                                 "url": dataUrl,
+                                "detail": "low" // Faster processing
                             },
                         },
                     ],
