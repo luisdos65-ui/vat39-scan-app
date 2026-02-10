@@ -82,8 +82,12 @@ export async function POST(req: NextRequest) {
             } catch (e: any) {
                 console.warn(`Failed with model ${modelName}:`, e.message);
                 // LOG THE FULL ERROR TO SEE THE CODE (404, 403, etc.)
-                if (e.response) {
-                     console.warn(`Error Response for ${modelName}:`, JSON.stringify(e.response, null, 2));
+                // GoogleGenerativeAI often puts status in e.status or e.response
+                if (e.status) {
+                    console.warn(`Status for ${modelName}: ${e.status} ${e.statusText}`);
+                }
+                if (e.errorDetails) {
+                     console.warn(`Error Details for ${modelName}:`, JSON.stringify(e.errorDetails, null, 2));
                 }
                 lastError = e;
                 // Continue to next model
@@ -91,7 +95,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (!result && lastError) {
-             console.error("All models failed. Last error:", lastError);
+             console.error("All models failed. Last error object:", JSON.stringify(lastError, Object.getOwnPropertyNames(lastError)));
              throw lastError;
         }
 
