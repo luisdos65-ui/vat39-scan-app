@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
+// Enable Edge Runtime for longer timeouts (up to 30s wall-clock)
+export const runtime = 'edge';
+
 // Initialize OpenAI
 // NOTE: User must provide OPENAI_API_KEY in .env
 const openai = new OpenAI({
@@ -89,7 +92,7 @@ export async function POST(req: NextRequest) {
                     ],
                 },
             ],
-            max_tokens: 500,
+            max_tokens: 300, // Reduced from 500 to ensure speed
         });
 
         console.log("OpenAI Response received");
