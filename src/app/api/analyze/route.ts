@@ -35,10 +35,18 @@ export async function POST(req: NextRequest) {
         
         console.log(`Processing image: ${file.name} (${file.size} bytes, type: ${file.type})`);
 
-        // Convert File to ArrayBuffer then to Base64
+        // Convert File to ArrayBuffer then to Base64 (Edge Compatible)
         const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const base64Image = buffer.toString('base64');
+        
+        // Manual Base64 encoding to avoid Node.js Buffer in Edge Runtime
+        let binary = '';
+        const bytes = new Uint8Array(arrayBuffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        const base64Image = btoa(binary);
+        
         const dataUrl = `data:${file.type || 'image/jpeg'};base64,${base64Image}`;
 
         const prompt = `
